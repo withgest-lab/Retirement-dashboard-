@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노후 현금 흐름 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#F4F6F9;padding:16px;font-size:13px;color:#222;}
+h1{font-size:17px;font-weight:700;color:#111;margin-bottom:2px;}
+.subtitle{font-size:11px;color:#999;margin-bottom:14px;}
+.layout{display:grid;grid-template-columns:282px 1fr;gap:14px;align-items:start;}
+.panel{background:#fff;border:1px solid #E8EAF0;border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+.panel-title{font-size:11px;font-weight:700;color:#333;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #F0F2F5;}
+
+/* ── 계좌별 색상 토큰 ── */
+/* NH  농협연금저축   #1D9E75 teal   */
+/* MF  미래에셋연금저축 #0F6E56 dark-teal */
+/* IRP 개인납입 IRP  #378ADD blue   */
+/* DC  퇴직연금IRP   #7F77DD purple */
+/* NP  국민연금      #EF9F27 amber  */
+/* ISA ISA          #888780 gray   */
+/* EXP 생활비        #D85A30 coral  */
+
+.acct-header{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;border-radius:6px;padding:5px 8px;margin:10px 0 8px;letter-spacing:.2px;}
+.acct-header .dot{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+
+/* 슬라이더 행 */
+.irow{display:flex;flex-direction:column;margin-bottom:9px;}
+.irow-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.ilabel{font-size:11px;color:#777;}
+.ival{font-size:12px;font-weight:700;padding:2px 8px;border-radius:5px;min-width:76px;text-align:center;border-width:1px;border-style:solid;}
+
+/* 색상별 accent-color & badge */
+.nh  input[type=range]{accent-color:#1D9E75;}
+.mf  input[type=range]{accent-color:#0F6E56;}
+.irp input[type=range]{accent-color:#378ADD;}
+.dc  input[type=range]{accent-color:#7F77DD;}
+.np  input[type=range]{accent-color:#EF9F27;}
+.isa input[type=range]{accent-color:#888780;}
+.exp input[type=range]{accent-color:#D85A30;}
+.base-slider input[type=range]{accent-color:#AAB0BB;}
+
+.nh  .ival{color:#085041;background:#E1F5EE;border-color:#5DCAA5;}
+.mf  .ival{color:#085041;background:#C8EDE1;border-color:#1D9E75;}
+.irp .ival{color:#0C447C;background:#E6F1FB;border-color:#85B7EB;}
+.dc  .ival{color:#3C3489;background:#EEEDFE;border-color:#AFA9EC;}
+.np  .ival{color:#633806;background:#FAEEDA;border-color:#EF9F27;}
+.isa .ival{color:#444441;background:#F1EFE8;border-color:#B4B2A9;}
+.exp .ival{color:#712B13;background:#FAECE7;border-color:#F0997B;}
+.base-slider .ival{color:#5F5E5A;background:#F1EFE8;border-color:#D3D1C7;}
+
+input[type=range]{width:100%;cursor:pointer;}
+hr.div{border:none;border-top:1px dashed #EEF0F4;margin:4px 0 2px;}
+
+/* 메트릭 카드 */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+.mcard{background:#fff;border:1px solid #E8EAF0;border-radius:10px;padding:12px 14px;}
+.mlabel{font-size:10px;color:#AAB0BB;margin-bottom:4px;}
+.mval{font-size:20px;font-weight:700;line-height:1;}
+.msub{font-size:10px;color:#BBB;margin-top:4px;}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:4px;}
+.badge-ok{background:#E8F5EE;color:#1D9E75;}
+.badge-warn{background:#FFF3E0;color:#E65100;}
+
+/* 오른쪽 */
+.chart-wrap{background:#fff;border:1px solid #E8EAF0;border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+.legend{display:flex;flex-wrap:wrap;gap:10px;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#555;}
+.leg-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+.tabs{display:flex;gap:6px;}
+.tab-btn{padding:4px 12px;font-size:11px;border-radius:6px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#888;font-family:inherit;}
+.tab-btn.on{background:#111;color:#fff;border-color:#111;font-weight:700;}
+.sc-tabs{display:flex;gap:6px;margin-bottom:14px;}
+.sc-btn{padding:5px 14px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#888;font-family:inherit;}
+.sc-btn.on-base{background:#EAF3FF;color:#1565C0;border-color:#90CAF9;font-weight:700;}
+.sc-btn.on-opt{background:#E8F5EE;color:#1D7A50;border-color:#81C784;font-weight:700;}
+.sc-btn.on-pes{background:#FFF3E0;color:#E65100;border-color:#FFB74D;font-weight:700;}
+.phase-seg{border-radius:4px;padding:7px 10px;font-size:10px;font-weight:700;line-height:1.5;white-space:pre-line;}
+.phase-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.phase-card{border-radius:8px;padding:10px 12px;}
+.phase-card-title{font-size:11px;font-weight:700;margin-bottom:6px;}
+.phase-card-item{font-size:10px;color:#555;margin-bottom:3px;display:flex;gap:4px;align-items:flex-start;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{padding:6px 8px;text-align:right;font-weight:600;color:#AAB0BB;border-bottom:1.5px solid #eee;}
+th:first-child{text-align:left;}
+td{padding:6px 8px;text-align:right;border-bottom:1px solid #f5f5f5;color:#444;}
+td:first-child{text-align:left;}
+tr.cur-row{background:#FAFFFE;}
+.note{font-size:10px;color:#CCC;line-height:1.6;margin-top:6px;}
+.top-bar{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+button{font-family:inherit;cursor:pointer;}
+.sec-label{font-size:10px;font-weight:700;color:#AAB0BB;margin:8px 0 6px;letter-spacing:.3px;}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div>
+    <h1>노후 현금 흐름 대시보드</h1>
+    <div class="subtitle" id="subtitle">51세 → 57세 은퇴 · 사적연금 한도 1,400만원/년 관리</div>
+  </div>
+  <div class="sc-tabs">
+    <button class="sc-btn on-base" onclick="setSc('base',this)">기본</button>
+    <button class="sc-btn" onclick="setSc('opt',this)">낙관</button>
+    <button class="sc-btn" onclick="setSc('pes',this)">비관</button>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="mcard"><div class="mlabel">공백기 월 수령</div><div class="mval" id="m1" style="color:#1D9E75">-</div><div class="msub" id="m1s">-</div></div>
+  <div class="mcard"><div class="mlabel">완성기 월 수령</div><div class="mval" id="m2" style="color:#378ADD">-</div><div class="msub" id="m2s">-</div></div>
+  <div class="mcard"><div class="mlabel">사적연금 연수령</div><div class="mval" id="m3">-</div><div id="m3b"></div></div>
+  <div class="mcard"><div class="mlabel">자산 소진 예상</div><div class="mval" id="m4">-</div><div class="msub" id="m4s">-</div></div>
+</div>
+
+<div class="layout">
+<div>
+
+<!-- ① 기본 정보 -->
+<div class="panel">
+  <div class="panel-title">① 기본 정보</div>
+  <div class="irow base-slider"><div class="irow-top"><span class="ilabel">현재 나이</span><span class="ival" id="o-age">51세</span></div><input type="range" min="45" max="60" step="1" value="51" id="age" oninput="upd()"></div>
+  <div class="irow base-slider"><div class="irow-top"><span class="ilabel">은퇴 나이</span><span class="ival" id="o-ret">57세</span></div><input type="range" min="53" max="65" step="1" value="57" id="ret" oninput="upd()"></div>
+  <div class="irow base-slider"><div class="irow-top"><span class="ilabel">기대 수명</span><span class="ival" id="o-life">90세</span></div><input type="range" min="80" max="100" step="1" value="90" id="life" oninput="upd()"></div>
+  <div class="irow exp"><div class="irow-top"><span class="ilabel">월 생활비 목표</span><span class="ival" id="o-exp">225만원</span></div><input type="range" min="150" max="500" step="5" value="225" id="exp" oninput="upd()"></div>
+</div>
+
+<!-- ② 계좌별 운영 플랜 -->
+<div class="panel">
+  <div class="panel-title">② 계좌별 운영 플랜</div>
+
+  <!-- 농협 연금저축 -->
+  <div class="acct-header" style="background:#E1F5EE;color:#085041;">
+    <span class="dot" style="background:#1D9E75;"></span> 연금저축 · 농협
+  </div>
+  <div class="irow nh"><div class="irow-top"><span class="ilabel">현재 잔액</span><span class="ival" id="o-nh">1.5억</span></div><input type="range" min="5000" max="30000" step="500" value="15000" id="nh" oninput="upd()"></div>
+  <div class="irow nh"><div class="irow-top"><span class="ilabel">월 납입액</span><span class="ival" id="o-nhm">50만원</span></div><input type="range" min="0" max="100" step="5" value="50" id="nhm" oninput="upd()"></div>
+  <div class="irow nh"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span class="ival" id="o-nhage">57세</span></div><input type="range" min="55" max="75" step="1" value="57" id="nhage" oninput="upd()"></div>
+  <div class="irow nh"><div class="irow-top"><span class="ilabel">월 수령액 (목표)</span><span class="ival" id="o-nhpay">70만원</span></div><input type="range" min="0" max="200" step="5" value="70" id="nhpay" oninput="upd()"></div>
+
+  <hr class="div">
+
+  <!-- 미래에셋 연금저축 -->
+  <div class="acct-header" style="background:#C8EDE1;color:#085041;">
+    <span class="dot" style="background:#0F6E56;"></span> 연금저축 · 미래에셋
+  </div>
+  <div class="irow mf"><div class="irow-top"><span class="ilabel">현재 잔액</span><span class="ival" id="o-mf">9천만</span></div><input type="range" min="3000" max="20000" step="500" value="9000" id="mf" oninput="upd()"></div>
+  <div class="irow mf"><div class="irow-top"><span class="ilabel">월 납입액</span><span class="ival" id="o-mfm">0만원</span></div><input type="range" min="0" max="100" step="5" value="0" id="mfm" oninput="upd()"></div>
+  <div class="irow mf"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span class="ival" id="o-mfage">65세</span></div><input type="range" min="55" max="75" step="1" value="65" id="mfage" oninput="upd()"></div>
+  <div class="irow mf"><div class="irow-top"><span class="ilabel">월 수령액 (목표)</span><span class="ival" id="o-mfpay">46만원</span></div><input type="range" min="0" max="150" step="5" value="46" id="mfpay" oninput="upd()"></div>
+
+  <hr class="div">
+
+  <!-- IRP 개인납입 -->
+  <div class="acct-header" style="background:#E6F1FB;color:#0C447C;">
+    <span class="dot" style="background:#378ADD;"></span> 미래에셋 IRP (개인납입)
+  </div>
+  <div class="irow irp"><div class="irow-top"><span class="ilabel">현재 잔액</span><span class="ival" id="o-irp">0만원</span></div><input type="range" min="0" max="10000" step="500" value="0" id="irp" oninput="upd()"></div>
+  <div class="irow irp"><div class="irow-top"><span class="ilabel">월 납입액</span><span class="ival" id="o-irpm">25만원</span></div><input type="range" min="0" max="50" step="5" value="25" id="irpm" oninput="upd()"></div>
+  <div class="irow irp"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span class="ival" id="o-irpage">65세</span></div><input type="range" min="55" max="75" step="1" value="65" id="irpage" oninput="upd()"></div>
+  <div class="irow irp"><div class="irow-top"><span class="ilabel">월 수령액 (목표)</span><span class="ival" id="o-irppay">0만원</span></div><input type="range" min="0" max="100" step="5" value="0" id="irppay" oninput="upd()"></div>
+
+  <hr class="div">
+
+  <!-- 퇴직연금 DC → IRP -->
+  <div class="acct-header" style="background:#EEEDFE;color:#3C3489;">
+    <span class="dot" style="background:#7F77DD;"></span> 퇴직연금 (DC → 퇴직 IRP)
+  </div>
+  <div class="irow dc"><div class="irow-top"><span class="ilabel">현재 잔액</span><span class="ival" id="o-tirp">3.2억</span></div><input type="range" min="10000" max="60000" step="1000" value="32000" id="tirp" oninput="upd()"></div>
+  <div class="irow dc"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span class="ival" id="o-tage">65세</span></div><input type="range" min="55" max="75" step="1" value="65" id="tage" oninput="upd()"></div>
+  <div class="irow dc"><div class="irow-top"><span class="ilabel">월 수령액</span><span class="ival" id="o-tm">100만원</span></div><input type="range" min="50" max="300" step="10" value="100" id="tm" oninput="upd()"></div>
+
+  <hr class="div">
+
+  <!-- 국민연금 -->
+  <div class="acct-header" style="background:#FAEEDA;color:#633806;">
+    <span class="dot" style="background:#EF9F27;"></span> 국민연금
+  </div>
+  <div class="irow np"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span class="ival" id="o-npage">65세</span></div><input type="range" min="60" max="70" step="1" value="65" id="npage" oninput="upd()"></div>
+  <div class="irow np"><div class="irow-top"><span class="ilabel">월 수령액</span><span class="ival" id="o-np">170만원</span></div><input type="range" min="80" max="220" step="5" value="170" id="np" oninput="upd()"></div>
+
+  <hr class="div">
+
+  <!-- ISA -->
+  <div class="acct-header" style="background:#F1EFE8;color:#444441;">
+    <span class="dot" style="background:#888780;"></span> ISA (S&amp;P500 ETF)
+  </div>
+  <div class="irow isa"><div class="irow-top"><span class="ilabel">현재 잔액</span><span class="ival" id="o-isa">0만원</span></div><input type="range" min="0" max="10000" step="500" value="0" id="isa" oninput="upd()"></div>
+  <div class="irow isa"><div class="irow-top"><span class="ilabel">연납입 (일시납)</span><span class="ival" id="o-isay">2,000만원</span></div><input type="range" min="0" max="2000" step="100" value="2000" id="isay" oninput="upd()"></div>
+  <div class="irow isa"><div class="irow-top"><span class="ilabel">인출 시작 나이</span><span class="ival" id="o-isaage">57세</span></div><input type="range" min="55" max="70" step="1" value="57" id="isaage" oninput="upd()"></div>
+  <div class="irow isa"><div class="irow-top"><span class="ilabel">월 인출액 (공백기)</span><span class="ival" id="o-isam">90만원</span></div><input type="range" min="0" max="200" step="5" value="90" id="isam" oninput="upd()"></div>
+</div>
+
+<!-- ③ 설계 기준 & 수익률 -->
+<div class="panel">
+  <div class="panel-title">③ 설계 기준 · 수익률 · 물가상승률</div>
+
+  <div class="sec-label">사적연금 연간 한도 (농협 + 미래에셋 + IRP 개인납입)</div>
+  <div class="irow exp"><div class="irow-top"><span class="ilabel">연간 수령 한도</span><span class="ival" id="o-plimit">1,400만원</span></div><input type="range" min="900" max="1500" step="50" value="1400" id="plimit" oninput="upd()"></div>
+
+  <hr class="div">
+  <div class="sec-label">계좌별 수익률 예상</div>
+
+  <div class="irow nh"><div class="irow-top">
+    <span class="ilabel" style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>농협 연금저축</span>
+    <span class="ival" id="o-rnh">4.0%</span></div><input type="range" min="1" max="10" step="0.5" value="4" id="rnh" oninput="upd()"></div>
+
+  <div class="irow mf"><div class="irow-top">
+    <span class="ilabel" style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:#0F6E56;display:inline-block;"></span>미래에셋 연금저축</span>
+    <span class="ival" id="o-rmf">4.0%</span></div><input type="range" min="1" max="10" step="0.5" value="4" id="rmf" oninput="upd()"></div>
+
+  <div class="irow irp"><div class="irow-top">
+    <span class="ilabel" style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:#378ADD;display:inline-block;"></span>미래에셋 IRP (개인납입)</span>
+    <span class="ival" id="o-rirp">4.0%</span></div><input type="range" min="1" max="10" step="0.5" value="4" id="rirp" oninput="upd()"></div>
+
+  <div class="irow dc"><div class="irow-top">
+    <span class="ilabel" style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:#7F77DD;display:inline-block;"></span>퇴직연금 (DC IRP)</span>
+    <span class="ival" id="o-rtirp">4.0%</span></div><input type="range" min="1" max="10" step="0.5" value="4" id="rtirp" oninput="upd()"></div>
+
+  <div class="irow isa"><div class="irow-top">
+    <span class="ilabel" style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:#888780;display:inline-block;"></span>ISA</span>
+    <span class="ival" id="o-risa">7.0%</span></div><input type="range" min="3" max="12" step="0.5" value="7" id="risa" oninput="upd()"></div>
+
+  <hr class="div">
+  <div class="sec-label">물가상승률</div>
+  <div class="irow exp"><div class="irow-top"><span class="ilabel">연 물가상승률</span><span class="ival" id="o-inf">2.5%</span></div><input type="range" min="1" max="5" step="0.5" value="2.5" id="inf" oninput="upd()"></div>
+</div>
+
+</div>
+
+<!-- 오른쪽 결과 영역 -->
+<div>
+  <div class="chart-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <div class="tabs">
+        <button class="tab-btn on" id="tb-flow" onclick="setTab('flow')">월 현금흐름</button>
+        <button class="tab-btn" id="tb-asset" onclick="setTab('asset')">자산 잔액</button>
+      </div>
+      <div class="legend" id="chart-legend"></div>
+    </div>
+    <div style="position:relative;width:100%;height:250px;"><canvas id="mainChart"></canvas></div>
+  </div>
+
+  <div class="chart-wrap">
+    <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:10px;">시기별 수입 구조</div>
+    <div id="phase-bar" style="margin-bottom:8px;"></div>
+    <div class="phase-cards" id="phase-cards"></div>
+  </div>
+
+  <div class="chart-wrap">
+    <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:10px;">시나리오별 비교</div>
+    <table>
+      <thead><tr>
+        <th style="text-align:left">시나리오</th>
+        <th>수익률</th><th>물가</th><th>공백기 월수령</th><th>완성기 월수령</th><th>은퇴시 총자산</th><th>런웨이</th>
+      </tr></thead>
+      <tbody id="sc-body"></tbody>
+    </table>
+  </div>
+
+  <div class="note">※ 사적연금 한도(<span id="note-limit">1,400</span>만원/년)는 농협·미래에셋 연금저축 + IRP 개인납입분 합산 기준. 퇴직IRP 원금은 퇴직소득세 분류과세(한도 무관). ISA 수익 200만원 비과세·초과분 9.9% 분리과세. 본 시뮬레이션은 참고용이며 실제 세금·건보료는 개인 상황에 따라 다릅니다.</div>
+</div>
+</div>
+
+<script>
+/* ── 색상 정의 (차트 ↔ 패널 동일) ── */
+const C = {
+  nh:   {fill:'rgba(29,158,117,0.88)',  line:'#1D9E75'},
+  mf:   {fill:'rgba(15,110,86,0.75)',   line:'#0F6E56'},
+  irp:  {fill:'rgba(55,138,221,0.85)',  line:'#378ADD'},
+  dc:   {fill:'rgba(127,119,221,0.85)', line:'#7F77DD'},
+  np:   {fill:'rgba(239,159,39,0.88)',  line:'#EF9F27'},
+  isa:  {fill:'rgba(136,135,128,0.75)', line:'#888780'},
+  exp:  {fill:'#D85A30',               line:'#D85A30'},
+};
+
+let sc='base', chartTab='flow', mainChart=null;
+const SA={base:{r:0,inf:0}, opt:{r:2,inf:-0.5}, pes:{r:-2,inf:1}};
+
+function g(id){return document.getElementById(id);}
+function gv(id){return parseFloat(g(id).value);}
+
+function fmtW(v){
+  const a=Math.abs(v);
+  if(a>=10000) return (v/10000).toFixed(1)+'억';
+  if(a>=1000)  return (Math.round(v/100)/10)+'천만';
+  return Math.round(v)+'만';
+}
+function calcFV(pv,monthly,years,annualR){
+  const rm=Math.max(0,annualR)/100/12;
+  let b=pv; const n=Math.max(0,Math.round(years*12));
+  for(let i=0;i<n;i++) b=b*(1+rm)+monthly;
+  return Math.max(0,Math.round(b));
+}
+
+function simulate(p,adj){
+  const yrs=Math.max(0,p.ret-p.age);
+  const rNh=p.rnh+adj.r, rMf=p.rmf+adj.r, rIrp=p.rirp+adj.r;
+  const rTirp=p.rtirp+adj.r, rIsa=p.risa+adj.r, infR=p.inf+adj.inf;
+
+  const nhFV  =calcFV(p.nh,  p.nhm,          yrs,rNh);
+  const mfFV  =calcFV(p.mf,  p.mfm,          yrs,rMf);
+  const irpFV =calcFV(p.irp, p.irpm,         yrs,rIrp);
+  const tirpFV=calcFV(p.tirp,0,              yrs,rTirp);
+  const isaFV =calcFV(p.isa, p.isay*10000/12,yrs,rIsa);
+  const expAtRet=Math.round(p.exp*Math.pow(1+infR/100,yrs));
+  const privLimMon=Math.round(p.plimit/12);
+
+  const rows=[];
+  let nhB=nhFV,mfB=mfFV,irpB=irpFV,tirpB=tirpFV,isaB=isaFV,runway=p.life;
+  const rm_nh=rNh/100/12,rm_mf=rMf/100/12,rm_irp=rIrp/100/12;
+  const rm_tirp=rTirp/100/12,rm_isa=rIsa/100/12;
+
+  for(let age=p.ret;age<=p.life;age++){
+    const el=age-p.ret;
+    const curExp=Math.round(expAtRet*Math.pow(1+infR/100,el));
+    const nhOn=age>=p.nhage&&nhB>0, mfOn=age>=p.mfage&&mfB>0, irpOn=age>=p.irpage&&irpB>0;
+
+    let nhInc=nhOn?Math.min(p.nhpay,Math.round(nhB/12)):0;
+    let mfInc=mfOn?Math.min(p.mfpay,Math.round(mfB/12)):0;
+    let irpInc=irpOn?Math.min(p.irppay,Math.round(irpB/12)):0;
+    const privSum=nhInc+mfInc+irpInc;
+    if(privSum>privLimMon&&privSum>0){
+      const sc2=privLimMon/privSum;
+      nhInc=Math.round(nhInc*sc2); mfInc=Math.round(mfInc*sc2); irpInc=Math.round(irpInc*sc2);
+    }
+    const privInc=nhInc+mfInc+irpInc;
+    const npInc=age>=p.npage?p.np:0;
+    const tirpInc=age>=p.tage?p.tm:0;
+    const isaInc=age>=p.isaage&&isaB>0?Math.min(p.isam,Math.round(isaB/12)):0;
+    const totalInc=privInc+npInc+tirpInc+isaInc;
+
+    nhB  =Math.max(0,nhB*(1+rm_nh*12)  -nhInc*12);
+    mfB  =Math.max(0,mfB*(1+rm_mf*12)  -mfInc*12);
+    irpB =Math.max(0,irpB*(1+rm_irp*12)-irpInc*12);
+    tirpB=age>=p.tage?Math.max(0,tirpB*(1+rm_tirp*12)-p.tm*12):Math.max(0,tirpB*(1+rm_tirp*12));
+    isaB =Math.max(0,isaB*(1+rm_isa*12)-isaInc*12);
+
+    const totalAsset=nhB+mfB+irpB+tirpB+isaB;
+    if(totalAsset<=0&&runway===p.life) runway=age;
+
+    rows.push({age,label:age+'세',nhInc,mfInc,irpInc,privInc,npInc,tirpInc,isaInc,totalInc,curExp,
+      privSum:Math.round((nhB+mfB+irpB)/10000*10)/10,
+      tirpB:Math.round(tirpB/10000*10)/10,
+      isaB:Math.round(isaB/10000*10)/10});
+  }
+
+  const gR=rows[0], fR=rows.find(r=>r.age===p.npage)||rows[rows.length-1];
+  return{nhFV,mfFV,irpFV,tirpFV,isaFV,
+    gapMonthly:gR?gR.totalInc:0, fullMonthly:fR?fR.totalInc:0,
+    privAnnual:gR?gR.privInc*12:0, runway,rows,
+    totalFV:nhFV+mfFV+irpFV+tirpFV+isaFV};
+}
+
+function getP(){
+  return{age:gv('age'),ret:gv('ret'),life:gv('life'),exp:gv('exp'),
+    nh:gv('nh'),nhm:gv('nhm'),nhage:gv('nhage'),nhpay:gv('nhpay'),
+    mf:gv('mf'),mfm:gv('mfm'),mfage:gv('mfage'),mfpay:gv('mfpay'),
+    irp:gv('irp'),irpm:gv('irpm'),irpage:gv('irpage'),irppay:gv('irppay'),
+    tirp:gv('tirp'),tage:gv('tage'),tm:gv('tm'),
+    np:gv('np'),npage:gv('npage'),
+    isa:gv('isa'),isay:gv('isay'),isaage:gv('isaage'),isam:gv('isam'),
+    plimit:gv('plimit'),
+    rnh:gv('rnh'),rmf:gv('rmf'),rirp:gv('rirp'),rtirp:gv('rtirp'),risa:gv('risa'),inf:gv('inf')};
+}
+
+function setSc(s,btn){sc=s;document.querySelectorAll('.sc-btn').forEach(b=>b.className='sc-btn');btn.className='sc-btn on-'+s;upd();}
+function setTab(t){chartTab=t;['flow','asset'].forEach(x=>g('tb-'+x).className='tab-btn'+(x===t?' on':''));upd();}
+
+const LEGENDS_FLOW=[
+  {k:'nh', label:'농협 연금저축'},
+  {k:'mf', label:'미래에셋 연금저축'},
+  {k:'irp',label:'IRP (개인납입)'},
+  {k:'np', label:'국민연금'},
+  {k:'dc', label:'퇴직IRP'},
+  {k:'isa',label:'ISA 인출'},
+  {k:'exp',label:'생활비 (선)'},
+];
+
+function drawChart(rows){
+  if(mainChart){mainChart.destroy();mainChart=null;}
+  const ctx=g('mainChart').getContext('2d');
+
+  if(chartTab==='flow'){
+    g('chart-legend').innerHTML=LEGENDS_FLOW.map(l=>
+      `<span class="leg-item"><span class="leg-swatch" style="background:${C[l.k].fill};${l.k==='exp'?'border:2px dashed '+C.exp.line+';background:transparent;':''}"></span>${l.label}</span>`
+    ).join('');
+
+    mainChart=new Chart(ctx,{
+      type:'bar',
+      data:{labels:rows.map(r=>r.label),datasets:[
+        {label:'농협 연금저축',   data:rows.map(r=>r.nhInc),  backgroundColor:C.nh.fill, stack:'s'},
+        {label:'미래에셋 연금저축',data:rows.map(r=>r.mfInc), backgroundColor:C.mf.fill, stack:'s'},
+        {label:'IRP(개인납입)',   data:rows.map(r=>r.irpInc), backgroundColor:C.irp.fill,stack:'s'},
+        {label:'국민연금',        data:rows.map(r=>r.npInc),  backgroundColor:C.np.fill, stack:'s'},
+        {label:'퇴직IRP',         data:rows.map(r=>r.tirpInc),backgroundColor:C.dc.fill, stack:'s'},
+        {label:'ISA 인출',        data:rows.map(r=>r.isaInc), backgroundColor:C.isa.fill,stack:'s'},
+        {label:'생활비',          data:rows.map(r=>r.curExp),
+          type:'line',borderColor:C.exp.line,borderWidth:2.5,borderDash:[5,3],
+          pointRadius:0,fill:false,order:0}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},
+        scales:{
+          x:{stacked:true,ticks:{font:{size:9},maxTicksLimit:9,autoSkip:true},grid:{display:false}},
+          y:{stacked:true,ticks:{font:{size:9},callback:v=>v+'만'},grid:{color:'rgba(0,0,0,0.04)'}}
+        }}
+    });
+  } else {
+    g('chart-legend').innerHTML=[
+      {c:C.nh.line,  l:'연금저축 합계'},
+      {c:C.dc.line,  l:'퇴직IRP'},
+      {c:C.isa.line, l:'ISA'},
+    ].map(x=>`<span class="leg-item"><span class="leg-swatch" style="background:${x.c}"></span>${x.l}</span>`).join('');
+
+    mainChart=new Chart(ctx,{
+      type:'line',
+      data:{labels:rows.map(r=>r.label),datasets:[
+        {label:'연금저축 합계',data:rows.map(r=>r.privSum),borderColor:C.nh.line, backgroundColor:C.nh.line+'22',fill:true,tension:0.3,pointRadius:0,borderWidth:2},
+        {label:'퇴직IRP',     data:rows.map(r=>r.tirpB), borderColor:C.dc.line, backgroundColor:C.dc.line+'22',fill:true,tension:0.3,pointRadius:0,borderWidth:2},
+        {label:'ISA',         data:rows.map(r=>r.isaB),  borderColor:C.isa.line,backgroundColor:C.isa.line+'22',fill:true,tension:0.3,pointRadius:0,borderWidth:2},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'억'}}},
+        scales:{
+          x:{ticks:{font:{size:9},maxTicksLimit:9,autoSkip:true},grid:{display:false}},
+          y:{ticks:{font:{size:9},callback:v=>v+'억'},grid:{color:'rgba(0,0,0,0.04)'}}
+        }}
+    });
+  }
+}
+
+function upd(){
+  const p=getP();
+  g('o-age').textContent=p.age+'세'; g('o-ret').textContent=p.ret+'세';
+  g('o-life').textContent=p.life+'세'; g('o-exp').textContent=p.exp.toLocaleString()+'만원';
+  g('o-nh').textContent=fmtW(p.nh); g('o-nhm').textContent=p.nhm+'만원';
+  g('o-nhage').textContent=p.nhage+'세'; g('o-nhpay').textContent=p.nhpay+'만원';
+  g('o-mf').textContent=fmtW(p.mf); g('o-mfm').textContent=p.mfm+'만원';
+  g('o-mfage').textContent=p.mfage+'세'; g('o-mfpay').textContent=p.mfpay+'만원';
+  g('o-irp').textContent=fmtW(p.irp); g('o-irpm').textContent=p.irpm+'만원';
+  g('o-irpage').textContent=p.irpage+'세'; g('o-irppay').textContent=p.irppay+'만원';
+  g('o-tirp').textContent=fmtW(p.tirp); g('o-tage').textContent=p.tage+'세'; g('o-tm').textContent=p.tm+'만원';
+  g('o-np').textContent=p.np+'만원'; g('o-npage').textContent=p.npage+'세';
+  g('o-isa').textContent=fmtW(p.isa); g('o-isay').textContent=p.isay.toLocaleString()+'만원';
+  g('o-isaage').textContent=p.isaage+'세'; g('o-isam').textContent=p.isam+'만원';
+  g('o-plimit').textContent=p.plimit.toLocaleString()+'만원';
+  g('o-rnh').textContent=p.rnh+'%'; g('o-rmf').textContent=p.rmf+'%';
+  g('o-rirp').textContent=p.rirp+'%'; g('o-rtirp').textContent=p.rtirp+'%';
+  g('o-risa').textContent=p.risa+'%'; g('o-inf').textContent=p.inf+'%';
+  g('subtitle').textContent=p.age+'세 → '+p.ret+'세 은퇴 · 사적연금 한도 '+p.plimit.toLocaleString()+'만원/년 관리';
+  g('note-limit').textContent=p.plimit.toLocaleString();
+
+  const res=simulate(p,SA[sc]);
+  g('m1').textContent=Math.round(res.gapMonthly)+'만';
+  g('m1s').textContent=p.ret+'~'+p.npage+'세 · 연금저축+ISA';
+  g('m2').textContent=Math.round(res.fullMonthly)+'만';
+  g('m2s').textContent=p.npage+'세~ · 4개 수입원';
+  g('m3').textContent=res.privAnnual.toLocaleString()+'만';
+  const pct=Math.round(res.privAnnual/p.plimit*100), ok=pct<=100;
+  g('m3b').innerHTML='<span class="badge '+(ok?'badge-ok':'badge-warn')+'">'+pct+'% '+(ok?'✓ 안전':'⚠ 초과')+'</span>';
+  const m4=g('m4');
+  if(res.runway===p.life){m4.textContent=p.life+'세+';m4.style.color='#1D9E75';g('m4s').textContent='소진 없음';}
+  else{m4.textContent=res.runway+'세';m4.style.color='#D85A30';g('m4s').textContent='자산 소진 시점';}
+
+  drawChart(res.rows);
+
+  const ts=p.life-p.age;
+  g('phase-bar').innerHTML='<div style="display:flex;gap:3px;">'+ [
+    {l:'적립기\n'+p.age+'~'+p.ret+'세',   w:(p.ret-p.age)/ts,    bg:'#EAF3FF',c:'#1565C0'},
+    {l:'공백기\n'+p.ret+'~'+p.npage+'세', w:(p.npage-p.ret)/ts,  bg:'#FFF8E1',c:'#E65100'},
+    {l:'완성기\n'+p.npage+'~'+p.life+'세',w:(p.life-p.npage)/ts, bg:'#E8F5EE',c:'#1D7A50'},
+  ].map(ph=>'<div class="phase-seg" style="width:'+Math.max(ph.w*100,8)+'%;background:'+ph.bg+';color:'+ph.c+';">'+ph.l+'</div>').join('')+'</div>';
+
+  const gR=res.rows[0]||{};
+  g('phase-cards').innerHTML=[
+    {ph:'적립기',c:'#1565C0',bg:'#EAF3FF',items:[
+      {dot:C.nh.line,  t:'농협 연금저축 월 '+p.nhm+'만 납입'},
+      {dot:C.mf.line,  t:'미래에셋 연금저축 월 '+p.mfm+'만'},
+      {dot:C.irp.line, t:'IRP 개인납입 월 '+p.irpm+'만'},
+      {dot:C.isa.line, t:'ISA 연 '+p.isay.toLocaleString()+'만 일시납'},
+      {dot:C.dc.line,  t:'퇴직IRP DC 운용중'},
+    ]},
+    {ph:'공백기',c:'#E65100',bg:'#FFF3E0',items:[
+      {dot:C.nh.line,  t:'농협 연금저축 월 '+Math.round(gR.nhInc||0)+'만 ('+p.nhage+'세~)'},
+      {dot:C.mf.line,  t:'미래에셋 월 '+Math.round(gR.mfInc||0)+'만 ('+p.mfage+'세~)'},
+      {dot:C.irp.line, t:'IRP 월 '+Math.round(gR.irpInc||0)+'만 ('+p.irpage+'세~)'},
+      {dot:C.isa.line, t:'ISA 인출 월 '+p.isam+'만 ('+p.isaage+'세~)'},
+      {dot:C.dc.line,  t:'퇴직IRP 계속 운용'},
+    ]},
+    {ph:'완성기',c:'#1D7A50',bg:'#E8F5EE',items:[
+      {dot:C.np.line,  t:'국민연금 월 '+p.np+'만 ('+p.npage+'세~)'},
+      {dot:C.nh.line,  t:'농협+미래에셋+IRP 연금저축'},
+      {dot:C.dc.line,  t:'퇴직IRP 월 '+p.tm+'만 ('+p.tage+'세~)'},
+      {dot:C.isa.line, t:'ISA 잔여분 보조'},
+    ]},
+  ].map(ph=>'<div class="phase-card" style="background:'+ph.bg+';">'
+    +'<div class="phase-card-title" style="color:'+ph.c+';">'+ph.ph+'</div>'
+    +ph.items.map(it=>'<div class="phase-card-item"><span style="width:7px;height:7px;border-radius:2px;background:'+it.dot+';display:inline-block;flex-shrink:0;margin-top:2px;"></span>'+it.t+'</div>').join('')
+    +'</div>').join('');
+
+  const scList=['opt','base','pes'],scL={opt:'낙관',base:'기본',pes:'비관'};
+  g('sc-body').innerHTML=scList.map(s=>{
+    const r=simulate(p,SA[s]),a=SA[s],isCur=s===sc,ok=r.runway===p.life;
+    return '<tr class="'+(isCur?'cur-row':'')+'"><td style="font-weight:'+(isCur?700:400)+';color:'+(s==='opt'?'#1D7A50':s==='pes'?'#E65100':'#1565C0')+'">'+scL[s]+'</td>'
+      +'<td>'+(p.rnh+a.r)+'%</td><td>'+(p.inf+a.inf)+'%</td>'
+      +'<td>'+Math.round(r.gapMonthly)+'만원</td><td>'+Math.round(r.fullMonthly)+'만원</td>'
+      +'<td>'+fmtW(r.totalFV/10000)+'원</td>'
+      +'<td style="font-weight:700;color:'+(ok?'#1D9E75':'#D85A30')+'">'+(ok?p.life+'세+':r.runway+'세')+'</td></tr>';
+  }).join('');
+}
+
+upd();
+</script>
+</body>
+</html>
