@@ -192,7 +192,12 @@ button{font-family:inherit;cursor:pointer;}
 
   <div class="acct-header" style="background:#F1EFE8;color:#444441;"><span class="dot" style="background:#888780;"></span>ISA</div>
   <div class="irow isa"><div class="irow-top"><span class="ilabel">현재 잔액</span><span><input class="ival-input" type="number" id="isa" value="0" min="0" max="20000" step="500" onblur="onBlurFix('isa')" oninput="syncSlider('isa');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="isa-r" min="0" max="20000" step="500" value="0" oninput="syncInput('isa');upd()"></div>
-  <div class="irow isa"><div class="irow-top"><span class="ilabel">연납입 (일시납)</span><span><input class="ival-input" type="number" id="isay" value="2000" min="0" max="2000" step="100" onblur="onBlurFix('isay')" oninput="syncSlider('isay');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="isay-r" min="0" max="2000" step="100" value="2000" oninput="syncInput('isay');upd()"></div>
+  <div class="irow isa"><div class="irow-top"><span class="ilabel">연 납입액 (매년 1월 일시납)</span><span><input class="ival-input" type="number" id="isay" value="2000" min="0" max="2000" step="100" onblur="onBlurFix('isay')" oninput="syncSlider('isay');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="isay-r" min="0" max="2000" step="100" value="2000" oninput="syncInput('isay');upd()"></div>
+  <div class="irow isa"><div class="irow-top"><span class="ilabel">납입 시작 나이</span><span><input class="ival-input" type="number" id="isastart" value="51" min="40" max="65" step="1" onblur="onBlurFix('isastart')" oninput="syncSlider('isastart');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="isastart-r" min="40" max="65" step="1" value="51" oninput="syncInput('isastart');upd()"></div>
+  <div class="irow isa"><div class="irow-top"><span class="ilabel">납입 종료 나이 (은퇴 시)</span><span><input class="ival-input" type="number" id="isaend" value="57" min="50" max="70" step="1" onblur="onBlurFix('isaend')" oninput="syncSlider('isaend');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="isaend-r" min="50" max="70" step="1" value="57" oninput="syncInput('isaend');upd()"></div>
+  <div style="background:#F5F4F2;border-radius:5px;padding:5px 8px;margin:2px 0 7px;font-size:9px;color:#888;">
+    💡 <span id="isa-info">총 납입 기간 계산 중...</span>
+  </div>
   <div class="irow isa"><div class="irow-top"><span class="ilabel">인출 시작 나이</span><span><input class="ival-input" type="number" id="isaage" value="57" min="55" max="75" step="1" onblur="onBlurFix('isaage')" oninput="syncSlider('isaage');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="isaage-r" min="55" max="75" step="1" value="57" oninput="syncInput('isaage');upd()"></div>
   <div class="irow isa"><div class="irow-top"><span class="ilabel">월 인출액 (공백기)</span><span><input class="ival-input" type="number" id="isam" value="90" min="0" max="300" step="5" onblur="onBlurFix('isam')" oninput="syncSlider('isam');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="isam-r" min="0" max="300" step="5" value="90" oninput="syncInput('isam');upd()"></div>
 </div>
@@ -379,7 +384,20 @@ function autoSuggest(){
   const mfFV  = calcFV(p.mf,   p.mfm,    yrs, p.rmf);
   const irpFV = calcFV(p.irp,  p.irpm,   yrs, p.rirp);
   const tirpFV= calcFV(p.tirp, 0,         yrs, p.rtirp);
-  const isaFV = calcFV(p.isa,  p.isay/12, yrs, p.risa);
+  // ISA FV: 매년 1월 일시납 복리 계산
+  const isaFV = (function(){
+    const rm12 = Math.pow(1 + p.risa/100/12, 12);
+    let bal = p.isa;
+    const startAge = Math.max(p.age, p.isastart);
+    const endAge   = Math.min(p.ret, p.isaend);
+    const preYrs   = Math.max(0, startAge - p.age);
+    for(let i=0; i<preYrs; i++) bal = bal * rm12;
+    const payYrs   = Math.max(0, endAge - startAge + 1);
+    for(let i=0; i<payYrs; i++) bal = bal * rm12 + p.isay;
+    const postYrs  = Math.max(0, p.ret - endAge - 1);
+    for(let i=0; i<postYrs; i++) bal = bal * rm12;
+    return Math.max(0, Math.round(bal));
+  })();
 
   const target = p.exp; // 공백기 월 생활비 목표
   let remaining = target;
@@ -467,7 +485,26 @@ function simulate(p, adj){
   const mfFV  =calcFV(p.mf,  p.mfm,    yrs, rMf);
   const irpFV =calcFV(p.irp, p.irpm,   yrs, rIrp);
   const tirpFV=calcFV(p.tirp,0,         yrs, rTirp);
-  const isaFV =calcFV(p.isa, p.isay/12, yrs, rIsa);
+  // ISA FV: 매년 1월 일시납 → 연납입 복리 계산
+  // 납입 시작 나이 ~ 납입 종료 나이(은퇴) 동안 매년 isay 납입
+  const isaFV = (function(){
+    const rm12 = Math.pow(1 + rIsa/100/12, 12); // 연복리 계수
+    let bal = p.isa; // 현재 잔액
+    const startAge = Math.max(p.age, p.isastart);
+    const endAge   = Math.min(p.ret, p.isaend);
+    // 현재~납입시작 전까지 운용만
+    const preYrs = Math.max(0, startAge - p.age);
+    for(let i=0; i<preYrs; i++) bal = bal * rm12;
+    // 납입 기간: startAge ~ endAge (endAge 포함)
+    const payYrs = Math.max(0, endAge - startAge + 1);
+    for(let i=0; i<payYrs; i++){
+      bal = bal * rm12 + p.isay; // 연초 납입 후 1년 복리
+    }
+    // 납입 종료 후 ~ 은퇴까지 운용만
+    const postYrs = Math.max(0, p.ret - endAge - 1);
+    for(let i=0; i<postYrs; i++) bal = bal * rm12;
+    return Math.max(0, Math.round(bal));
+  })();
   // 총자산 (은퇴 시점, 만원)
   const totalFV = nhFV+mfFV+irpFV+tirpFV+isaFV;
 
@@ -556,7 +593,7 @@ const ALL_FIELDS = [
   'irp','irpm','irpage','irppay',
   'tirp','tage','tm',
   'np','npage',
-  'isa','isay','isaage','isam',
+  'isa','isay','isastart','isaend','isaage','isam',
   'rnh','rmf','rirp','rtirp','risa','inf'
 ];
 
@@ -600,7 +637,7 @@ function getP(){
     irp:gv('irp'),irpm:gv('irpm'),irpage:gv('irpage'),irppay:gv('irppay'),
     tirp:gv('tirp'),tage:gv('tage'),tm:gv('tm'),
     np:gv('np'),npage:gv('npage'),
-    isa:gv('isa'),isay:gv('isay'),isaage:gv('isaage'),isam:gv('isam'),
+    isa:gv('isa'),isay:gv('isay'),isastart:gv('isastart'),isaend:gv('isaend'),isaage:gv('isaage'),isam:gv('isam'),
     plimit:gv('plimit'),
     rnh:gv('rnh'),rmf:gv('rmf'),rirp:gv('rirp'),rtirp:gv('rtirp'),risa:gv('risa'),inf:gv('inf')
   };
@@ -675,6 +712,31 @@ function upd(){
   document.getElementById('subtitle').textContent=
     p.age+'세 → '+p.ret+'세 은퇴 · 사적연금 한도 '+p.plimit.toLocaleString()+'만원/년';
   document.getElementById('note-limit').textContent=p.plimit.toLocaleString();
+
+  // ISA 납입 요약 정보 업데이트
+  (function(){
+    const el = document.getElementById('isa-info');
+    if(!el) return;
+    const startAge = Math.max(p.age, p.isastart);
+    const endAge   = Math.min(p.ret, p.isaend);
+    const payYrs   = Math.max(0, endAge - startAge + 1);
+    const totalPay = payYrs * p.isay;
+    // 은퇴 시점 예상 ISA 잔액 (간이 계산)
+    const rm12 = Math.pow(1 + p.risa/100/12, 12);
+    let bal = p.isa;
+    const preYrs = Math.max(0, startAge - p.age);
+    for(let i=0; i<preYrs; i++) bal = bal * rm12;
+    for(let i=0; i<payYrs; i++) bal = bal * rm12 + p.isay;
+    const postYrs = Math.max(0, p.ret - endAge - 1);
+    for(let i=0; i<postYrs; i++) bal = bal * rm12;
+    bal = Math.max(0, Math.round(bal));
+    el.textContent = startAge+'세~'+endAge+'세 매년 '+p.isay.toLocaleString()+'만 납입 ('+payYrs+'년, 총 '+totalPay.toLocaleString()+'만) → '+p.ret+'세 시 예상 잔액 약 '+fmtW(bal)+'원';
+    // isaend 슬라이더 최대값을 은퇴 나이에 맞게 동기화
+    const endRng = document.getElementById('isaend-r');
+    const endInp = document.getElementById('isaend');
+    if(endRng) endRng.max = p.ret;
+    if(endInp && parseFloat(endInp.value) > p.ret){ endInp.value = p.ret; if(endRng) endRng.value = p.ret; }
+  })();
 
   // 한도 게이지
   const totalPrivMon=p.nhpay+p.mfpay+p.irppay;
