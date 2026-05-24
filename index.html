@@ -327,6 +327,27 @@ function fmtW(v){
   return Math.round(v)+'만';
 }
 
+/* ── ISA 미래가치 계산 (매년 1월 첫째주 일시납, 연초납입) ──
+   로직: 매년 1월에 isay 납입 → 그 해 12개월 복리 운용
+   수식: bal = (bal + isay) * (1+r/12)^12  (연초 납입 후 연말까지 운용)
+*/
+function calcISA_FV(curBal, isay, curAge, startAge, endAge, retAge, annualR){
+  const rm12 = Math.pow(1 + annualR/100/12, 12); // 1년 월복리 계수
+  let bal = curBal;
+  // 현재 나이부터 은퇴 나이까지 연도별 시뮬레이션
+  for(let age = curAge; age < retAge; age++){
+    const isPaying = (age >= startAge && age <= endAge);
+    if(isPaying){
+      // 연초 일시납 후 1년 운용
+      bal = (bal + isay) * rm12;
+    } else {
+      // 납입 없이 운용만
+      bal = bal * rm12;
+    }
+  }
+  return Math.max(0, Math.round(bal));
+}
+
 /* ── 은퇴 시점 미래가치 계산 (월복리) ── */
 function calcFV(pv, monthly, years, annualR){
   const rm = annualR/100/12;
@@ -384,20 +405,16 @@ function autoSuggest(){
   const mfFV  = calcFV(p.mf,   p.mfm,    yrs, p.rmf);
   const irpFV = calcFV(p.irp,  p.irpm,   yrs, p.rirp);
   const tirpFV= calcFV(p.tirp, 0,         yrs, p.rtirp);
-  // ISA FV: 매년 1월 일시납 복리 계산
-  const isaFV = (function(){
-    const rm12 = Math.pow(1 + p.risa/100/12, 12);
-    let bal = p.isa;
-    const startAge = Math.max(p.age, p.isastart);
-    const endAge   = Math.min(p.ret, p.isaend);
-    const preYrs   = Math.max(0, startAge - p.age);
-    for(let i=0; i<preYrs; i++) bal = bal * rm12;
-    const payYrs   = Math.max(0, endAge - startAge + 1);
-    for(let i=0; i<payYrs; i++) bal = bal * rm12 + p.isay;
-    const postYrs  = Math.max(0, p.ret - endAge - 1);
-    for(let i=0; i<postYrs; i++) bal = bal * rm12;
-    return Math.max(0, Math.round(bal));
-  })();
+  // ISA FV: 매년 1월 첫째주 일시납 (연초납입 → 12개월 복리)
+  const isaFV = calcISA_FV(
+    p.isa,
+    p.isay,
+    p.age,
+    Math.max(p.age, p.isastart),
+    Math.min(p.ret, p.isaend),
+    p.ret,
+    p.risa  // 시나리오 조정 없이 기본 수익률 사용
+  );
 
   const target = p.exp; // 공백기 월 생활비 목표
   let remaining = target;
@@ -485,26 +502,16 @@ function simulate(p, adj){
   const mfFV  =calcFV(p.mf,  p.mfm,    yrs, rMf);
   const irpFV =calcFV(p.irp, p.irpm,   yrs, rIrp);
   const tirpFV=calcFV(p.tirp,0,         yrs, rTirp);
-  // ISA FV: 매년 1월 일시납 → 연납입 복리 계산
-  // 납입 시작 나이 ~ 납입 종료 나이(은퇴) 동안 매년 isay 납입
-  const isaFV = (function(){
-    const rm12 = Math.pow(1 + rIsa/100/12, 12); // 연복리 계수
-    let bal = p.isa; // 현재 잔액
-    const startAge = Math.max(p.age, p.isastart);
-    const endAge   = Math.min(p.ret, p.isaend);
-    // 현재~납입시작 전까지 운용만
-    const preYrs = Math.max(0, startAge - p.age);
-    for(let i=0; i<preYrs; i++) bal = bal * rm12;
-    // 납입 기간: startAge ~ endAge (endAge 포함)
-    const payYrs = Math.max(0, endAge - startAge + 1);
-    for(let i=0; i<payYrs; i++){
-      bal = bal * rm12 + p.isay; // 연초 납입 후 1년 복리
-    }
-    // 납입 종료 후 ~ 은퇴까지 운용만
-    const postYrs = Math.max(0, p.ret - endAge - 1);
-    for(let i=0; i<postYrs; i++) bal = bal * rm12;
-    return Math.max(0, Math.round(bal));
-  })();
+  // ISA FV: 매년 1월 첫째주 일시납 (연초납입 → 12개월 복리)
+  const isaFV = calcISA_FV(
+    p.isa,        // 현재 잔액
+    p.isay,       // 연 납입액 (만원)
+    p.age,        // 현재 나이
+    Math.max(p.age, p.isastart), // 납입 시작 나이
+    Math.min(p.ret, p.isaend),   // 납입 종료 나이
+    p.ret,        // 은퇴 나이
+    rIsa          // 수익률 (시나리오 조정 반영)
+  );
   // 총자산 (은퇴 시점, 만원)
   const totalFV = nhFV+mfFV+irpFV+tirpFV+isaFV;
 
@@ -722,14 +729,7 @@ function upd(){
     const payYrs   = Math.max(0, endAge - startAge + 1);
     const totalPay = payYrs * p.isay;
     // 은퇴 시점 예상 ISA 잔액 (간이 계산)
-    const rm12 = Math.pow(1 + p.risa/100/12, 12);
-    let bal = p.isa;
-    const preYrs = Math.max(0, startAge - p.age);
-    for(let i=0; i<preYrs; i++) bal = bal * rm12;
-    for(let i=0; i<payYrs; i++) bal = bal * rm12 + p.isay;
-    const postYrs = Math.max(0, p.ret - endAge - 1);
-    for(let i=0; i<postYrs; i++) bal = bal * rm12;
-    bal = Math.max(0, Math.round(bal));
+    const bal = calcISA_FV(p.isa, p.isay, p.age, startAge, endAge, p.ret, p.risa);
     el.textContent = startAge+'세~'+endAge+'세 매년 '+p.isay.toLocaleString()+'만 납입 ('+payYrs+'년, 총 '+totalPay.toLocaleString()+'만) → '+p.ret+'세 시 예상 잔액 약 '+fmtW(bal)+'원';
     // isaend 슬라이더 최대값을 은퇴 나이에 맞게 동기화
     const endRng = document.getElementById('isaend-r');
