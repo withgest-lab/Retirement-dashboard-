@@ -368,63 +368,90 @@ function limitCheck(changed){
   upd();
 }
 
-/* ── 자동 최적 플랜 ── */
+/* ── 자동 최적 플랜 (생활비 목표 충족 우선) ── */
 function autoSuggest(){
-  const p=getP();
-  const yrs=Math.max(0,p.ret-p.age);
-  const monLimit=Math.round(p.plimit/12);
-  const nhFV  =calcFV(p.nh,  p.nhm,    yrs, p.rnh);
-  const mfFV  =calcFV(p.mf,  p.mfm,    yrs, p.rmf);
-  const irpFV =calcFV(p.irp, p.irpm,   yrs, p.rirp);
-  const tirpFV=calcFV(p.tirp,0,         yrs, p.rtirp);
-  const isaFV =calcFV(p.isa, p.isay/12, yrs, p.risa);
-  const gapYrs=Math.max(1,p.npage-p.ret);
+  const p   = getP();
+  const yrs = Math.max(0, p.ret - p.age);
+  const monLimit = Math.round(p.plimit / 12);
+  const gapYrs   = Math.max(1, p.npage - p.ret);
 
-  // 1순위 ISA (비과세, 건보료 없음)
-  const isaMonSug=Math.min(Math.round(isaFV/(gapYrs*12)*0.8), Math.round(p.exp*0.5), 200);
-  // 2순위 미래에셋 (잔액 작은 것 먼저)
-  const expAfterISA=Math.max(0,p.exp-isaMonSug);
-  const mfMon=Math.min(Math.round(mfFV/(gapYrs*12)), expAfterISA, monLimit);
-  // 3순위 농협 (장기 분산)
-  const nhSpan=Math.max(1,p.life-p.ret);
-  const nhMon=Math.min(Math.round(nhFV/(nhSpan*12)), Math.max(0,monLimit-mfMon));
-  // 4순위 IRP 70세 이후
-  const irpStartAge=Math.min(70,p.life-5);
-  const irpSpan=Math.max(1,p.life-irpStartAge);
-  const irpMon=Math.min(Math.round(irpFV/(irpSpan*12)), Math.max(0,monLimit-nhMon-mfMon));
-  // 퇴직IRP 65세
-  const tirpSpan=Math.max(1,p.life-65);
-  const tirpMonSug=Math.min(Math.max(Math.round(tirpFV/(tirpSpan*12)),50),300);
+  const nhFV  = calcFV(p.nh,   p.nhm,    yrs, p.rnh);
+  const mfFV  = calcFV(p.mf,   p.mfm,    yrs, p.rmf);
+  const irpFV = calcFV(p.irp,  p.irpm,   yrs, p.rirp);
+  const tirpFV= calcFV(p.tirp, 0,         yrs, p.rtirp);
+  const isaFV = calcFV(p.isa,  p.isay/12, yrs, p.risa);
 
-  sv('mfage',  p.ret);        sv('mfpay',  Math.min(mfMon,200));
-  sv('nhage',  p.ret);        sv('nhpay',  Math.min(nhMon,300));
-  sv('irpage', irpStartAge);  sv('irppay', Math.min(irpMon,150));
-  sv('isaage', p.ret);        sv('isam',   Math.min(Math.max(isaMonSug,0),300));
-  sv('tage',   65);           sv('tm',     tirpMonSug);
+  const target = p.exp; // 공백기 월 생활비 목표
+  let remaining = target;
 
-  const annualPriv=(mfMon+nhMon+irpMon)*12;
-  const gapTotal=mfMon+nhMon+isaMonSug;
-  const fullTotal=nhMon+irpMon+p.np+tirpMonSug;
+  // STEP 1: ISA (1순위 - 비과세, 건보료 없음) → 목표 달성에 필요한 만큼 최대 배분
+  const isaMaxMon = Math.round(isaFV / (gapYrs * 12) * 0.85);
+  const isaMonSug = Math.min(isaMaxMon, remaining, 300);
+  remaining = Math.max(0, remaining - isaMonSug);
 
-  const box=document.getElementById('suggest-box');
-  box.className='suggest-result show';
-  box.innerHTML=`<strong>✅ 세금·건보료 최소화 최적 인출 플랜</strong>
-<div style="margin:5px 0 3px;font-size:9px;font-weight:700;">▸ 공백기 (${p.ret}~${p.npage}세)</div>
+  // STEP 2: 미래에셋 연금저축 (2순위 - 잔액 小 먼저) → 남은 목표 채우기
+  const mfMaxMon = Math.round(mfFV / (gapYrs * 12));
+  const mfMon    = Math.min(mfMaxMon, remaining, monLimit, 200);
+  remaining = Math.max(0, remaining - mfMon);
+
+  // STEP 3: 농협 연금저축 (3순위 - 장기 분산) → 남은 목표 채우기
+  const nhSpan   = Math.max(1, p.life - p.ret);
+  const nhMaxMon = Math.round(nhFV / (nhSpan * 12));
+  const nhMon    = Math.min(nhMaxMon, Math.max(0, monLimit - mfMon), 300);
+  remaining = Math.max(0, remaining - nhMon);
+
+  // STEP 4: 목표 미달 시 ISA 추가 인출로 보완
+  let isaFinal = isaMonSug;
+  if(remaining > 0){
+    const extra = Math.min(remaining, Math.max(0, isaMaxMon - isaMonSug), Math.max(0, 300 - isaMonSug));
+    isaFinal += extra;
+    remaining = Math.max(0, remaining - extra);
+  }
+
+  // STEP 5: IRP 개인납입 (70세 이후 보조)
+  const irpStartAge = Math.min(70, p.life - 5);
+  const irpSpan     = Math.max(1, p.life - irpStartAge);
+  const irpMon      = Math.min(Math.round(irpFV / (irpSpan * 12)), Math.max(0, monLimit - nhMon - mfMon), 150);
+
+  // STEP 6: 퇴직IRP 65세 개시 (한도 무관)
+  const tirpSpan   = Math.max(1, p.life - 65);
+  const tirpMonSug = Math.min(Math.max(Math.round(tirpFV / (tirpSpan * 12)), 50), 300);
+
+  // 슬라이더 일괄 설정
+  sv('mfage',  p.ret);       sv('mfpay',  mfMon);
+  sv('nhage',  p.ret);       sv('nhpay',  nhMon);
+  sv('irpage', irpStartAge); sv('irppay', irpMon);
+  sv('isaage', p.ret);       sv('isam',   Math.min(isaFinal, 300));
+  sv('tage',   65);          sv('tm',     tirpMonSug);
+
+  const annualPriv = (mfMon + nhMon + irpMon) * 12;
+  const gapTotal   = mfMon + nhMon + isaFinal;
+  const fullTotal  = nhMon + irpMon + p.np + tirpMonSug;
+  const gapShort   = Math.max(0, target - gapTotal);
+  const gapOk      = gapShort === 0;
+  const limitOk    = annualPriv <= p.plimit;
+
+  const box = document.getElementById('suggest-box');
+  box.className = 'suggest-result show';
+  box.innerHTML = `<strong>✅ 세금·건보료 최소화 + 생활비 목표 충족 플랜</strong>
+<div style="margin:5px 0 3px;font-size:9px;font-weight:700;">▸ 공백기 (${p.ret}~${p.npage}세) — 목표 ${target}만원/월</div>
 <ul>
-  <li>🥇 ISA <b>${p.ret}세~ 월 ${isaMonSug}만</b> → 비과세·건보료 없음</li>
+  <li>🥇 ISA <b>${p.ret}세~ 월 ${isaFinal}만</b> → 비과세·건보료 없음 (최우선)</li>
   <li>🥈 미래에셋 <b>${p.ret}세~ 월 ${mfMon}만</b> → 잔액 작은 것 먼저 소진</li>
-  <li>🥉 농협 <b>${p.ret}세~ 월 ${nhMon}만</b> → 큰 잔액 복리 성장 유지</li>
-  <li>사적연금 합산 연 <b>${annualPriv.toLocaleString()}만</b> → 5.5% 분리과세 ✓</li>
+  <li>🥉 농협 <b>${p.ret}세~ 월 ${nhMon}만</b> → 큰 잔액 장기 분산</li>
+  <li>공백기 월 합계 <b>${gapTotal}만원</b> ${gapOk ? '✅ 목표 달성!' : '⚠️ '+gapShort+'만 부족 (자산 한계)'}</li>
+  <li>사적연금 합산 연 <b>${annualPriv.toLocaleString()}만</b> ${limitOk ? '→ 5.5% 분리과세 ✓' : '⚠️ 한도 초과 확인 필요'}</li>
 </ul>
 <div style="margin:5px 0 3px;font-size:9px;font-weight:700;">▸ 완성기 (${p.npage}세~)</div>
 <ul>
-  <li>국민연금 <b>${p.npage}세 정상 수령</b> (조기 시 영구 감액)</li>
-  <li>퇴직IRP <b>65세~ 월 ${tirpMonSug}만</b> (한도 무관·감면 30~40%)</li>
-  <li>IRP개인납입 <b>${irpStartAge}세~ 월 ${irpMon}만</b> (미래에셋 소진 후 보조)</li>
+  <li>국민연금 <b>${p.npage}세 정상 수령</b> → 조기수령 시 영구 감액</li>
+  <li>퇴직IRP <b>65세~ 월 ${tirpMonSug}만</b> → 한도 무관·30~40% 세금 감면</li>
+  <li>IRP개인납입 <b>${irpStartAge}세~ 월 ${irpMon}만</b> → 미래에셋 소진 후 보조</li>
+  <li>완성기 월 합계 <b>약 ${fullTotal}만원</b> ${fullTotal >= target ? '✅ 목표 초과' : ''}</li>
 </ul>
+${gapShort > 0 ? '<div style="background:#FFF3E0;border-radius:5px;padding:5px 8px;margin-top:4px;font-size:9px;color:#E65100;">⚠️ 공백기 월 <b>'+gapShort+'만원</b> 부족 — ISA 납입 증액 또는 생활비 목표 조정을 검토하세요</div>' : ''}
 <div style="margin-top:5px;padding-top:4px;border-top:1px dashed #C8EFE0;font-size:9px;color:#5F5E5A;">
-  💡 공백기 월 <b>약 ${gapTotal}만</b> · 완성기 월 <b>약 ${fullTotal}만</b><br>
-  ⚠️ 건보료 피부양자 기준 연소득 2,000만원 이하 — 국민연금+사적연금 합산 관리 필요
+  💡 건보료 피부양자 기준 연소득 2,000만원 이하 — 국민연금+사적연금 합산 관리 필요
 </div>`;
   upd();
 }
