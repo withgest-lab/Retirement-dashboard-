@@ -69,7 +69,7 @@ h1{font-size:15px;font-weight:700;color:#111;}
 
 /* ── 왼쪽 패널 ── */
 .left-panel{min-height:0;overflow-y:auto;overflow-x:hidden;
-  padding:8px 8px 32px;
+  padding:8px 10px 32px;
   background:#F4F6F9;border-right:1px solid #E8EAF0;}
 .left-panel::-webkit-scrollbar{width:3px;}
 .left-panel::-webkit-scrollbar-thumb{background:#D0D3DC;border-radius:3px;}
@@ -82,7 +82,7 @@ h1{font-size:15px;font-weight:700;color:#111;}
 
 /* ── 카드 패널 ── */
 .panel{background:#fff;border:1px solid #E8EAF0;border-radius:10px;
-  padding:10px 18px 14px 14px;margin-bottom:8px;}
+  padding:10px 20px 14px 14px;margin-bottom:8px;}
 .panel-title{font-size:11px;font-weight:700;color:#333;
   margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #F0F2F5;}
 
@@ -104,7 +104,7 @@ h1{font-size:15px;font-weight:700;color:#111;}
 .acct-header .dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
 
 /* ── 단일 irow ── */
-.irow{margin-bottom:2px;}
+.irow{margin-bottom:2px;padding-right:2px;}
 /* irow 전체: 라벨(위) + 컨트롤(중간) + 슬라이더(아래) 3단 구조 */
 .irow-top{
   display:grid;
@@ -191,7 +191,8 @@ input[type=range]:hover::-moz-range-thumb{background:#555;}
 .base-s input[type=range]::-moz-range-thumb{background:#AAB0BB;}
 
 /* ── 2열 납입 기간 행 ── */
-.irow-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
+.irow-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px;
+  margin-bottom:8px;padding-right:2px;}
 .c2-item{display:flex;flex-direction:column;gap:2px;}
 .c2-label{font-size:9px;color:#888;font-weight:600;margin-bottom:1px;}
 .c2-ctrl{display:flex;align-items:center;gap:2px;justify-content:center;}
