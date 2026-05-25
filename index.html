@@ -195,10 +195,11 @@ input[type=range]:hover::-moz-range-thumb{background:#555;}
   margin-bottom:8px;padding-right:2px;}
 .c2-item{display:flex;flex-direction:column;gap:2px;}
 .c2-label{font-size:9px;color:#888;font-weight:600;margin-bottom:1px;}
-.c2-ctrl{display:flex;align-items:center;gap:2px;justify-content:center;}
-.c2-input{font-size:11px;font-weight:700;width:46px;text-align:center;
+/* c2-ctrl: irow-ctrl과 동일하게 flex-end 정렬 → 잠금버튼 수직 일치 */
+.c2-ctrl{display:flex;align-items:center;gap:2px;justify-content:flex-end;}
+.c2-input{font-size:11px;font-weight:700;width:38px;text-align:center;
   border-width:1.5px;border-style:solid;border-radius:4px;
-  padding:2px 3px;outline:none;-moz-appearance:textfield;}
+  padding:2px 2px;outline:none;-moz-appearance:textfield;}
 .c2-input::-webkit-inner-spin-button,
 .c2-input::-webkit-outer-spin-button{-webkit-appearance:none;}
 .c2-input:focus{box-shadow:0 0 0 2px rgba(29,158,117,0.2);}
@@ -492,7 +493,7 @@ button{font-family:inherit;cursor:pointer;}
       <button class="arr-btn" onclick="stepVal('nhend',-1)">▼</button>
       <input type="number" id="nhend" value="57" min="50" max="75" step="1"
         class="c2-input" style="color:#085041;background:#E1F5EE;border-color:#5DCAA5;"
-        onblur="onBlurFix('nhend')" oninput="document.getElementById('nhend').dataset.manualSet='1';syncSlider('nhend');upd()"><span class="unit-tag">세</span>
+        onblur="onBlurFix('nhend')" oninput="syncSlider('nhend')"><span class="unit-tag">세</span>
       <button class="arr-btn" onclick="stepVal('nhend',1)">▲</button>
       <button class="lock-btn locked" id="lock-nhend" onclick="toggleLock('nhend')">🔒</button>
     </div>
@@ -564,7 +565,7 @@ button{font-family:inherit;cursor:pointer;}
       <button class="arr-btn" onclick="stepVal('mfend',-1)">▼</button>
       <input type="number" id="mfend" value="57" min="50" max="75" step="1"
         class="c2-input" style="color:#085041;background:#C8EDE1;border-color:#1D9E75;"
-        onblur="onBlurFix('mfend')" oninput="document.getElementById('mfend').dataset.manualSet='1';syncSlider('mfend');upd()"><span class="unit-tag">세</span>
+        onblur="onBlurFix('mfend')" oninput="syncSlider('mfend')"><span class="unit-tag">세</span>
       <button class="arr-btn" onclick="stepVal('mfend',1)">▲</button>
       <button class="lock-btn locked" id="lock-mfend" onclick="toggleLock('mfend')">🔒</button>
     </div>
@@ -636,7 +637,7 @@ button{font-family:inherit;cursor:pointer;}
       <button class="arr-btn" onclick="stepVal('irpend',-1)">▼</button>
       <input type="number" id="irpend" value="57" min="50" max="75" step="1"
         class="c2-input" style="color:#0C447C;background:#E6F1FB;border-color:#85B7EB;"
-        onblur="onBlurFix('irpend')" oninput="document.getElementById('irpend').dataset.manualSet='1';syncSlider('irpend');upd()"><span class="unit-tag">세</span>
+        onblur="onBlurFix('irpend')" oninput="syncSlider('irpend')"><span class="unit-tag">세</span>
       <button class="arr-btn" onclick="stepVal('irpend',1)">▲</button>
       <button class="lock-btn locked" id="lock-irpend" onclick="toggleLock('irpend')">🔒</button>
     </div>
@@ -772,7 +773,7 @@ button{font-family:inherit;cursor:pointer;}
       <button class="arr-btn" onclick="stepVal('isaend',-1)">▼</button>
       <input type="number" id="isaend" value="57" min="50" max="75" step="1"
         class="c2-input" style="color:#444441;background:#F1EFE8;border-color:#B4B2A9;"
-        onblur="onBlurFix('isaend')" oninput="document.getElementById('isaend').dataset.manualSet='1';syncSlider('isaend');upd()"><span class="unit-tag">세</span>
+        onblur="onBlurFix('isaend')" oninput="syncSlider('isaend')"><span class="unit-tag">세</span>
       <button class="arr-btn" onclick="stepVal('isaend',1)">▲</button>
       <button class="lock-btn locked" id="lock-isaend" onclick="toggleLock('isaend')">🔒</button>
     </div>
