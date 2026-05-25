@@ -1329,6 +1329,7 @@ function autoSuggest(){
 
   const annualPriv = (mfMon + nhMon + irpMon) * 12;
   const gapTotal   = mfMon + nhMon + isaFinal;
+  // 완성기: 농협(장기분산 계속 유지) + IRP개인납입 + 국민연금 + 퇴직IRP
   const fullTotal  = nhMon + irpMon + p.np + tirpMonSug;
   const gapShort   = Math.max(0, target - gapTotal);
   const gapOk      = gapShort === 0;
@@ -1362,6 +1363,7 @@ function autoSuggest(){
 <div style="margin:5px 0 3px;font-size:9px;font-weight:700;">▸ 완성기 (${p.npage}세~)</div>
 <ul>
   <li>국민연금 <b>${p.npage}세 정상 수령</b> → 조기수령 시 영구 감액</li>
+  <li>농협 <b>계속 월 ${nhMon}만</b> → 잔액 大, 전체 수명 기준 장기 분산 유지</li>
   <li>퇴직IRP <b>65세~ 월 ${tirpMonSug}만</b> → 한도 무관·퇴직소득세 분류과세</li>
   <li>IRP개인납입 <b>${irpStartAge}세~ 월 ${irpMon}만</b> → 미래에셋 소진 후 자동 연동 개시</li>
   <li>완성기 월 합계 <b>약 ${fullTotal}만원</b> ${fullTotal >= target ? '✅ 목표 초과' : ''}</li>
