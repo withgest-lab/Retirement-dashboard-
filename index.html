@@ -145,12 +145,12 @@ input[type=range].locked-range{pointer-events:none;opacity:0.3;}
 input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
 /* 슬라이더 핸들 크기 축소 */
 input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:10px;height:10px;border-radius:50%;
-  background:#888;cursor:pointer;border:1.5px solid #fff;
+  -webkit-appearance:none;width:7px;height:7px;border-radius:50%;
+  background:#888;cursor:pointer;border:1px solid #fff;
   box-shadow:0 0 2px rgba(0,0,0,0.25);}
 input[type=range]::-moz-range-thumb{
-  width:10px;height:10px;border-radius:50%;background:#888;
-  cursor:pointer;border:1.5px solid #fff;box-shadow:0 0 2px rgba(0,0,0,0.25);}
+  width:7px;height:7px;border-radius:50%;background:#888;
+  cursor:pointer;border:1px solid #fff;box-shadow:0 0 2px rgba(0,0,0,0.25);}
 input[type=range]:hover::-webkit-slider-thumb{background:#555;}
 input[type=range]:hover::-moz-range-thumb{background:#555;}
 /* 색상 클래스별 핸들 색상 */
@@ -904,6 +904,11 @@ function toggleLock(id){
     btn.classList.replace('locked','unlocked');
     btn.textContent='🔓'; btn.title='클릭하여 잠금';
     if(inp){ inp.removeAttribute('disabled'); inp.style.opacity='1'; inp.style.cursor='text'; }
+    // 납입종료 잠금 해제 시 현재 은퇴나이로 초기값 설정 (이후 자유롭게 수정 가능)
+    if(['nhend','mfend','irpend','isaend'].includes(id)){
+      const retVal = document.getElementById('ret') ? document.getElementById('ret').value : inp.value;
+      inp.value = retVal; rng.value = retVal;
+    }
     // 화살표 버튼 활성화
     _setArrBtns(id, false);
   } else {
@@ -1762,18 +1767,15 @@ function upd(){
   saveState();
   const p=getP();
 
-  // 납입종료 나이가 기본값(은퇴나이)인 경우 은퇴나이 변경에 자동 추종
-  // _endLocked 플래그가 없는 필드는 은퇴나이와 동기화
-  // 단, 사용자가 수동으로 바꾼 경우는 그 값 유지
-  // → 초기값(57)과 현재 ret이 같으면 자동 추종, 다르면 수동 설정으로 간주
+  // 납입종료 나이 자동 추종:
+  // 잠금(locked) 상태 → 은퇴 나이에 자동 동기화
+  // 잠금 해제(unlocked) 상태 → 사용자가 수동으로 설정한 값 유지
   ['nhend','mfend','irpend','isaend'].forEach(fid => {
     const inp = document.getElementById(fid);
     const rng = document.getElementById(fid+'-r');
     if(!inp || !rng) return;
-    const cur = parseFloat(inp.value);
-    const stored = parseFloat(inp.dataset.manualSet || '0');
-    // manualSet이 설정되지 않았거나 빈 문자열이면 은퇴나이로 자동 추종
-    if(!inp.dataset.manualSet || inp.dataset.manualSet !== '1'){
+    const isLocked = rng.classList.contains('locked-range');
+    if(isLocked){
       inp.value = p.ret; rng.value = p.ret;
     }
   });
@@ -1784,18 +1786,23 @@ function upd(){
   document.getElementById('note-limit').textContent=p.plimit.toLocaleString();
 
   // ── 납입 종료 나이: 슬라이더 max를 은퇴 나이로 확장 + 기본값 연동 ──
-  // 모든 계좌의 납입종료(end) 슬라이더 max를 은퇴 나이에 맞게 갱신
-  // 단, 사용자가 수동으로 설정한 값은 유지 (강제 변경 안 함)
+  // 잠금 해제 상태의 슬라이더는 max만 조정하고 값은 유지
+  // 잠금 상태의 슬라이더는 은퇴나이에 맞게 max + 값 모두 동기화
   ['nhend','mfend','irpend','isaend'].forEach(fid => {
     const rng = document.getElementById(fid+'-r');
     const inp = document.getElementById(fid);
     if(!rng || !inp) return;
-    // max를 은퇴 나이 + 여유(5년)로 확장 → 수동으로 은퇴 이후도 설정 가능
     const newMax = p.ret + 5;
     rng.max = newMax;
-    // 현재 값이 새 max보다 크면 클램핑
-    if(parseFloat(inp.value) > newMax){
-      inp.value = newMax; rng.value = newMax;
+    // 잠금 상태이면 은퇴나이로 값도 동기화
+    const isLocked = rng.classList.contains('locked-range');
+    if(isLocked){
+      inp.value = p.ret; rng.value = p.ret;
+    } else {
+      // 잠금 해제 상태: 현재 값이 새 max보다 크면 클램핑만
+      if(parseFloat(inp.value) > newMax){
+        inp.value = newMax; rng.value = newMax;
+      }
     }
   });
 
