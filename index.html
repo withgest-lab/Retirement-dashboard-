@@ -299,12 +299,34 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
       <button class="arr-btn" onclick="stepVal('exp',-5)">▼</button>
       <input class="ival-input" type="number" id="exp" value="225" min="100" max="600" step="5" onblur="onBlurFix('exp')" oninput="syncSlider('exp');upd()"><span class="unit-tag">만원</span>
       <button class="arr-btn" onclick="stepVal('exp',5)">▲</button>
-      <butt<div class="panel">
+      on "btn locked" id="lock-exp" onclick="toggleLock('exp')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="exp-r" min="100" max="600" step="5" value="225" class="locked-range" oninput="syncInput('exp');upd()">
+</div>
+  <div class="irow exp">
+  <div class="irow-top">
+    <span class="ilabel">사적연금 연간 한도</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('plimit',-50)">▼</button>
+      <input class="ival-input" type="number" id="plimit" value="1400" min="900" max="1500" step="50" onblur="onBlurFix('plimit')" oninput="syncSlider('plimit');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('plimit',50)">▲</button>
+      <button class="lock-btn locked" id="lock-plimit" onclick="toggleLock('plimit')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="plimit-r" min="900" max="1500" step="50" value="1400" class="locked-range" oninput="syncInput('plimit');upd()">
+</div>
+  <button class="suggest-btn" onclick="autoSuggest()">✨ 세금·건보료 최소화 플랜 자동 제안</button>
+  <div class="suggest-result" id="suggest-box"></div>
+</div>
+
+<div class="panel">
   <div class="panel-title">② 계좌별 운영 플랜</div>
 
 <div class="acct-header" style="background:#E1F5EE;color:#085041;"><span class="dot" style="background:#1D9E75;"></span>연금저축 · 농협</div>
 <div class="irow nh">
-  <div class="irow-top"><span class="ilabel">현재 잔액</span>
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('nh',-500)">▼</button>
       <input class="ival-input" type="number" id="nh" value="15000" min="0" max="50000" step="500" onblur="onBlurFix('nh')" oninput="syncSlider('nh');upd()"><span class="unit-tag">만원</span>
@@ -315,7 +337,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="nh-r" min="0" max="50000" step="500" value="15000" class="locked-range" oninput="syncInput('nh');upd()">
 </div>
 <div class="irow nh">
-  <div class="irow-top"><span class="ilabel">월 납입액</span>
+  <div class="irow-top">
+    <span class="ilabel">월 납입액</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('nhm',-5)">▼</button>
       <input class="ival-input" type="number" id="nhm" value="50" min="0" max="150" step="5" onblur="onBlurFix('nhm')" oninput="syncSlider('nhm');upd()"><span class="unit-tag">만원</span>
@@ -326,33 +349,38 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="nhm-r" min="0" max="150" step="5" value="50" class="locked-range" oninput="syncInput('nhm');upd()">
 </div>
 <div class="irow-2col">
-  <div class="irow-2col-item">
-      <div class="col-label">납입 시작</div>
-      <div class="col-ctrl nh">
-        <button class="arr-btn" onclick="stepVal('nhstart',-1)">▼</button>
-        <input type="number" id="nhstart" value="51" min="40" max="65" step="1"
-          style="color:#085041;background:#E1F5EE;border-color:#5DCAA5;"
-          onblur="onBlurFix('nhstart')" oninput="syncSlider('nhstart');upd()"><span class="unit-tag">세</span>
-        <button class="arr-btn" onclick="stepVal('nhstart',1)">▲</button>
-        <button class="lock-btn locked" id="lock-nhstart" onclick="toggleLock('nhstart')" title="잠금 해제">🔒</button>
-      </div>
-      <input type="range" id="nhstart-r" min="40" max="65" step="1" value="51" class="compact-range locked-range" oninput="syncInput('nhstart');upd()">
+  <div class="c2-item">
+    <div class="c2-label">납입 시작</div>
+    <div class="c2-ctrl">
+      <button class="arr-btn" onclick="stepVal('nhstart',-1)">▼</button>
+      <input type="number" id="nhstart" value="51" min="40" max="65" step="1"
+        class="c2-input" style="color:#085041;background:#E1F5EE;border-color:#5DCAA5;"
+        onblur="onBlurFix('nhstart')" oninput="syncSlider('nhstart');upd()">
+      <span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('nhstart',1)">▲</button>
+      <button class="lock-btn locked" id="lock-nhstart" onclick="toggleLock('nhstart')" title="잠금 해제">🔒</button>
     </div>
-  <div class="irow-2col-item">
-      <div class="col-label">납입 종료</div>
-      <div class="col-ctrl nh">
-        <button class="arr-btn" onclick="stepVal('nhend',-1)">▼</button>
-        <input type="number" id="nhend" value="57" min="50" max="70" step="1"
-          style="color:#085041;background:#E1F5EE;border-color:#5DCAA5;"
-          onblur="onBlurFix('nhend')" oninput="syncSlider('nhend');upd()"><span class="unit-tag">세</span>
-        <button class="arr-btn" onclick="stepVal('nhend',1)">▲</button>
-        <button class="lock-btn locked" id="lock-nhend" onclick="toggleLock('nhend')" title="잠금 해제">🔒</button>
-      </div>
-      <input type="range" id="nhend-r" min="50" max="70" step="1" value="57" class="compact-range locked-range" oninput="syncInput('nhend');upd()">
+    <input type="range" id="nhstart-r" min="40" max="65" step="1" value="51"
+      class="c2-range locked-range" oninput="syncInput('nhstart');upd()">
+  </div>
+  <div class="c2-item">
+    <div class="c2-label">납입 종료</div>
+    <div class="c2-ctrl">
+      <button class="arr-btn" onclick="stepVal('nhend',-1)">▼</button>
+      <input type="number" id="nhend" value="57" min="50" max="70" step="1"
+        class="c2-input" style="color:#085041;background:#E1F5EE;border-color:#5DCAA5;"
+        onblur="onBlurFix('nhend')" oninput="syncSlider('nhend');upd()">
+      <span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('nhend',1)">▲</button>
+      <button class="lock-btn locked" id="lock-nhend" onclick="toggleLock('nhend')" title="잠금 해제">🔒</button>
     </div>
+    <input type="range" id="nhend-r" min="50" max="70" step="1" value="57"
+      class="c2-range locked-range" oninput="syncInput('nhend');upd()">
+  </div>
 </div>
 <div class="irow nh">
-  <div class="irow-top"><span class="ilabel">수령 시작 나이</span>
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('nhage',-1)">▼</button>
       <input class="ival-input" type="number" id="nhage" value="57" min="55" max="80" step="1" onblur="onBlurFix('nhage')" oninput="syncSlider('nhage');upd()"><span class="unit-tag">세</span>
@@ -363,7 +391,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="nhage-r" min="55" max="80" step="1" value="57" class="locked-range" oninput="syncInput('nhage');upd()">
 </div>
 <div class="irow nh">
-  <div class="irow-top"><span class="ilabel">월 수령액 목표</span>
+  <div class="irow-top">
+    <span class="ilabel">월 수령액 목표</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('nhpay',-5)">▼</button>
       <input class="ival-input" type="number" id="nhpay" value="70" min="0" max="300" step="5" onblur="onBlurFix('nhpay')" oninput="syncSlider('nhpay');limitCheck('nhpay')"><span class="unit-tag">만원</span>
@@ -373,11 +402,12 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   </div>
   <input type="range" id="nhpay-r" min="0" max="300" step="5" value="70" class="locked-range" oninput="syncInput('nhpay');upd()">
 </div>
-<hr class="acct-divider">
+<hr class="div">
 
 <div class="acct-header" style="background:#C8EDE1;color:#085041;"><span class="dot" style="background:#0F6E56;"></span>연금저축 · 미래에셋</div>
 <div class="irow mf">
-  <div class="irow-top"><span class="ilabel">현재 잔액</span>
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('mf',-500)">▼</button>
       <input class="ival-input" type="number" id="mf" value="9000" min="0" max="30000" step="500" onblur="onBlurFix('mf')" oninput="syncSlider('mf');upd()"><span class="unit-tag">만원</span>
@@ -388,7 +418,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="mf-r" min="0" max="30000" step="500" value="9000" class="locked-range" oninput="syncInput('mf');upd()">
 </div>
 <div class="irow mf">
-  <div class="irow-top"><span class="ilabel">월 납입액</span>
+  <div class="irow-top">
+    <span class="ilabel">월 납입액</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('mfm',-5)">▼</button>
       <input class="ival-input" type="number" id="mfm" value="0" min="0" max="150" step="5" onblur="onBlurFix('mfm')" oninput="syncSlider('mfm');upd()"><span class="unit-tag">만원</span>
@@ -399,33 +430,38 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="mfm-r" min="0" max="150" step="5" value="0" class="locked-range" oninput="syncInput('mfm');upd()">
 </div>
 <div class="irow-2col">
-  <div class="irow-2col-item">
-      <div class="col-label">납입 시작</div>
-      <div class="col-ctrl mf">
-        <button class="arr-btn" onclick="stepVal('mfstart',-1)">▼</button>
-        <input type="number" id="mfstart" value="51" min="40" max="65" step="1"
-          style="color:#085041;background:#C8EDE1;border-color:#1D9E75;"
-          onblur="onBlurFix('mfstart')" oninput="syncSlider('mfstart');upd()"><span class="unit-tag">세</span>
-        <button class="arr-btn" onclick="stepVal('mfstart',1)">▲</button>
-        <button class="lock-btn locked" id="lock-mfstart" onclick="toggleLock('mfstart')" title="잠금 해제">🔒</button>
-      </div>
-      <input type="range" id="mfstart-r" min="40" max="65" step="1" value="51" class="compact-range locked-range" oninput="syncInput('mfstart');upd()">
+  <div class="c2-item">
+    <div class="c2-label">납입 시작</div>
+    <div class="c2-ctrl">
+      <button class="arr-btn" onclick="stepVal('mfstart',-1)">▼</button>
+      <input type="number" id="mfstart" value="51" min="40" max="65" step="1"
+        class="c2-input" style="color:#085041;background:#C8EDE1;border-color:#1D9E75;"
+        onblur="onBlurFix('mfstart')" oninput="syncSlider('mfstart');upd()">
+      <span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('mfstart',1)">▲</button>
+      <button class="lock-btn locked" id="lock-mfstart" onclick="toggleLock('mfstart')" title="잠금 해제">🔒</button>
     </div>
-  <div class="irow-2col-item">
-      <div class="col-label">납입 종료</div>
-      <div class="col-ctrl mf">
-        <button class="arr-btn" onclick="stepVal('mfend',-1)">▼</button>
-        <input type="number" id="mfend" value="57" min="50" max="70" step="1"
-          style="color:#085041;background:#C8EDE1;border-color:#1D9E75;"
-          onblur="onBlurFix('mfend')" oninput="syncSlider('mfend');upd()"><span class="unit-tag">세</span>
-        <button class="arr-btn" onclick="stepVal('mfend',1)">▲</button>
-        <button class="lock-btn locked" id="lock-mfend" onclick="toggleLock('mfend')" title="잠금 해제">🔒</button>
-      </div>
-      <input type="range" id="mfend-r" min="50" max="70" step="1" value="57" class="compact-range locked-range" oninput="syncInput('mfend');upd()">
+    <input type="range" id="mfstart-r" min="40" max="65" step="1" value="51"
+      class="c2-range locked-range" oninput="syncInput('mfstart');upd()">
+  </div>
+  <div class="c2-item">
+    <div class="c2-label">납입 종료</div>
+    <div class="c2-ctrl">
+      <button class="arr-btn" onclick="stepVal('mfend',-1)">▼</button>
+      <input type="number" id="mfend" value="57" min="50" max="70" step="1"
+        class="c2-input" style="color:#085041;background:#C8EDE1;border-color:#1D9E75;"
+        onblur="onBlurFix('mfend')" oninput="syncSlider('mfend');upd()">
+      <span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('mfend',1)">▲</button>
+      <button class="lock-btn locked" id="lock-mfend" onclick="toggleLock('mfend')" title="잠금 해제">🔒</button>
     </div>
+    <input type="range" id="mfend-r" min="50" max="70" step="1" value="57"
+      class="c2-range locked-range" oninput="syncInput('mfend');upd()">
+  </div>
 </div>
 <div class="irow mf">
-  <div class="irow-top"><span class="ilabel">수령 시작 나이</span>
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('mfage',-1)">▼</button>
       <input class="ival-input" type="number" id="mfage" value="57" min="55" max="80" step="1" onblur="onBlurFix('mfage')" oninput="syncSlider('mfage');upd()"><span class="unit-tag">세</span>
@@ -436,7 +472,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="mfage-r" min="55" max="80" step="1" value="57" class="locked-range" oninput="syncInput('mfage');upd()">
 </div>
 <div class="irow mf">
-  <div class="irow-top"><span class="ilabel">월 수령액 목표</span>
+  <div class="irow-top">
+    <span class="ilabel">월 수령액 목표</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('mfpay',-5)">▼</button>
       <input class="ival-input" type="number" id="mfpay" value="46" min="0" max="200" step="5" onblur="onBlurFix('mfpay')" oninput="syncSlider('mfpay');limitCheck('mfpay')"><span class="unit-tag">만원</span>
@@ -446,11 +483,12 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   </div>
   <input type="range" id="mfpay-r" min="0" max="200" step="5" value="46" class="locked-range" oninput="syncInput('mfpay');upd()">
 </div>
-<hr class="acct-divider">
+<hr class="div">
 
 <div class="acct-header" style="background:#E6F1FB;color:#0C447C;"><span class="dot" style="background:#378ADD;"></span>미래에셋 IRP (개인납입)</div>
 <div class="irow irp">
-  <div class="irow-top"><span class="ilabel">현재 잔액</span>
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('irp',-500)">▼</button>
       <input class="ival-input" type="number" id="irp" value="0" min="0" max="20000" step="500" onblur="onBlurFix('irp')" oninput="syncSlider('irp');upd()"><span class="unit-tag">만원</span>
@@ -461,7 +499,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="irp-r" min="0" max="20000" step="500" value="0" class="locked-range" oninput="syncInput('irp');upd()">
 </div>
 <div class="irow irp">
-  <div class="irow-top"><span class="ilabel">연납입 (매년 1월 일시납)</span>
+  <div class="irow-top">
+    <span class="ilabel">연납입 (매년 1월 일시납)</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('irpy',-50)">▼</button>
       <input class="ival-input" type="number" id="irpy" value="300" min="0" max="1200" step="50" onblur="onBlurFix('irpy')" oninput="syncSlider('irpy');upd()"><span class="unit-tag">만원</span>
@@ -472,33 +511,38 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="irpy-r" min="0" max="1200" step="50" value="300" class="locked-range" oninput="syncInput('irpy');upd()">
 </div>
 <div class="irow-2col">
-  <div class="irow-2col-item">
-      <div class="col-label">납입 시작</div>
-      <div class="col-ctrl irp">
-        <button class="arr-btn" onclick="stepVal('irpstart',-1)">▼</button>
-        <input type="number" id="irpstart" value="51" min="40" max="65" step="1"
-          style="color:#0C447C;background:#E6F1FB;border-color:#85B7EB;"
-          onblur="onBlurFix('irpstart')" oninput="syncSlider('irpstart');upd()"><span class="unit-tag">세</span>
-        <button class="arr-btn" onclick="stepVal('irpstart',1)">▲</button>
-        <button class="lock-btn locked" id="lock-irpstart" onclick="toggleLock('irpstart')" title="잠금 해제">🔒</button>
-      </div>
-      <input type="range" id="irpstart-r" min="40" max="65" step="1" value="51" class="compact-range locked-range" oninput="syncInput('irpstart');upd()">
+  <div class="c2-item">
+    <div class="c2-label">납입 시작</div>
+    <div class="c2-ctrl">
+      <button class="arr-btn" onclick="stepVal('irpstart',-1)">▼</button>
+      <input type="number" id="irpstart" value="51" min="40" max="65" step="1"
+        class="c2-input" style="color:#0C447C;background:#E6F1FB;border-color:#85B7EB;"
+        onblur="onBlurFix('irpstart')" oninput="syncSlider('irpstart');upd()">
+      <span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('irpstart',1)">▲</button>
+      <button class="lock-btn locked" id="lock-irpstart" onclick="toggleLock('irpstart')" title="잠금 해제">🔒</button>
     </div>
-  <div class="irow-2col-item">
-      <div class="col-label">납입 종료</div>
-      <div class="col-ctrl irp">
-        <button class="arr-btn" onclick="stepVal('irpend',-1)">▼</button>
-        <input type="number" id="irpend" value="57" min="50" max="70" step="1"
-          style="color:#0C447C;background:#E6F1FB;border-color:#85B7EB;"
-          onblur="onBlurFix('irpend')" oninput="syncSlider('irpend');upd()"><span class="unit-tag">세</span>
-        <button class="arr-btn" onclick="stepVal('irpend',1)">▲</button>
-        <button class="lock-btn locked" id="lock-irpend" onclick="toggleLock('irpend')" title="잠금 해제">🔒</button>
-      </div>
-      <input type="range" id="irpend-r" min="50" max="70" step="1" value="57" class="compact-range locked-range" oninput="syncInput('irpend');upd()">
+    <input type="range" id="irpstart-r" min="40" max="65" step="1" value="51"
+      class="c2-range locked-range" oninput="syncInput('irpstart');upd()">
+  </div>
+  <div class="c2-item">
+    <div class="c2-label">납입 종료</div>
+    <div class="c2-ctrl">
+      <button class="arr-btn" onclick="stepVal('irpend',-1)">▼</button>
+      <input type="number" id="irpend" value="57" min="50" max="70" step="1"
+        class="c2-input" style="color:#0C447C;background:#E6F1FB;border-color:#85B7EB;"
+        onblur="onBlurFix('irpend')" oninput="syncSlider('irpend');upd()">
+      <span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('irpend',1)">▲</button>
+      <button class="lock-btn locked" id="lock-irpend" onclick="toggleLock('irpend')" title="잠금 해제">🔒</button>
     </div>
+    <input type="range" id="irpend-r" min="50" max="70" step="1" value="57"
+      class="c2-range locked-range" oninput="syncInput('irpend');upd()">
+  </div>
 </div>
 <div class="irow irp">
-  <div class="irow-top"><span class="ilabel">수령 시작 나이</span>
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('irpage',-1)">▼</button>
       <input class="ival-input" type="number" id="irpage" value="70" min="55" max="80" step="1" onblur="onBlurFix('irpage')" oninput="syncSlider('irpage');upd()"><span class="unit-tag">세</span>
@@ -509,7 +553,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="irpage-r" min="55" max="80" step="1" value="70" class="locked-range" oninput="syncInput('irpage');upd()">
 </div>
 <div class="irow irp">
-  <div class="irow-top"><span class="ilabel">월 수령액 목표</span>
+  <div class="irow-top">
+    <span class="ilabel">월 수령액 목표</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('irppay',-5)">▼</button>
       <input class="ival-input" type="number" id="irppay" value="0" min="0" max="150" step="5" onblur="onBlurFix('irppay')" oninput="syncSlider('irppay');limitCheck('irppay')"><span class="unit-tag">만원</span>
@@ -524,11 +569,12 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <div class="limit-gauge-info"><span>사적연금 합계 (농협+미래에셋+IRP)</span><span id="gauge-text" style="font-weight:700;">-</span></div>
   <div class="limit-gauge"><div class="limit-gauge-fill" id="gauge-fill" style="width:0%;background:#1D9E75;"></div></div>
 </div>
-<hr class="acct-divider">
+<hr class="div">
 
 <div class="acct-header" style="background:#EEEDFE;color:#3C3489;"><span class="dot" style="background:#7F77DD;"></span>퇴직연금 (DC → 퇴직 IRP)</div>
 <div class="irow dc">
-  <div class="irow-top"><span class="ilabel">현재 잔액</span>
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('tirp',-1000)">▼</button>
       <input class="ival-input" type="number" id="tirp" value="32000" min="0" max="100000" step="1000" onblur="onBlurFix('tirp')" oninput="syncSlider('tirp');upd()"><span class="unit-tag">만원</span>
@@ -539,7 +585,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="tirp-r" min="0" max="100000" step="1000" value="32000" class="locked-range" oninput="syncInput('tirp');upd()">
 </div>
 <div class="irow dc">
-  <div class="irow-top"><span class="ilabel">수령 시작 나이</span>
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('tage',-1)">▼</button>
       <input class="ival-input" type="number" id="tage" value="65" min="55" max="80" step="1" onblur="onBlurFix('tage')" oninput="syncSlider('tage');upd()"><span class="unit-tag">세</span>
@@ -550,7 +597,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="tage-r" min="55" max="80" step="1" value="65" class="locked-range" oninput="syncInput('tage');upd()">
 </div>
 <div class="irow dc">
-  <div class="irow-top"><span class="ilabel">월 수령액</span>
+  <div class="irow-top">
+    <span class="ilabel">월 수령액</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('tm',-10)">▼</button>
       <input class="ival-input" type="number" id="tm" value="100" min="10" max="500" step="10" onblur="onBlurFix('tm')" oninput="syncSlider('tm');upd()"><span class="unit-tag">만원</span>
@@ -560,11 +608,12 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   </div>
   <input type="range" id="tm-r" min="10" max="500" step="10" value="100" class="locked-range" oninput="syncInput('tm');upd()">
 </div>
-<hr class="acct-divider">
+<hr class="div">
 
 <div class="acct-header" style="background:#FAEEDA;color:#633806;"><span class="dot" style="background:#EF9F27;"></span>국민연금</div>
 <div class="irow np">
-  <div class="irow-top"><span class="ilabel">수령 시작 나이</span>
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('npage',-1)">▼</button>
       <input class="ival-input" type="number" id="npage" value="65" min="60" max="70" step="1" onblur="onBlurFix('npage')" oninput="syncSlider('npage');upd()"><span class="unit-tag">세</span>
@@ -575,7 +624,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="npage-r" min="60" max="70" step="1" value="65" class="locked-range" oninput="syncInput('npage');upd()">
 </div>
 <div class="irow np">
-  <div class="irow-top"><span class="ilabel">월 수령액</span>
+  <div class="irow-top">
+    <span class="ilabel">월 수령액</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('np',-5)">▼</button>
       <input class="ival-input" type="number" id="np" value="170" min="50" max="300" step="5" onblur="onBlurFix('np')" oninput="syncSlider('np');upd()"><span class="unit-tag">만원</span>
@@ -585,11 +635,12 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   </div>
   <input type="range" id="np-r" min="50" max="300" step="5" value="170" class="locked-range" oninput="syncInput('np');upd()">
 </div>
-<hr class="acct-divider">
+<hr class="div">
 
 <div class="acct-header" style="background:#F1EFE8;color:#444441;"><span class="dot" style="background:#888780;"></span>ISA</div>
 <div class="irow isa">
-  <div class="irow-top"><span class="ilabel">현재 잔액</span>
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('isa',-500)">▼</button>
       <input class="ival-input" type="number" id="isa" value="0" min="0" max="20000" step="500" onblur="onBlurFix('isa')" oninput="syncSlider('isa');upd()"><span class="unit-tag">만원</span>
@@ -600,7 +651,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="isa-r" min="0" max="20000" step="500" value="0" class="locked-range" oninput="syncInput('isa');upd()">
 </div>
 <div class="irow isa">
-  <div class="irow-top"><span class="ilabel">연납입 (매년 1월 일시납)</span>
+  <div class="irow-top">
+    <span class="ilabel">연납입 (매년 1월 일시납)</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('isay',-100)">▼</button>
       <input class="ival-input" type="number" id="isay" value="2000" min="0" max="2000" step="100" onblur="onBlurFix('isay')" oninput="syncSlider('isay');upd()"><span class="unit-tag">만원</span>
@@ -611,36 +663,41 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="isay-r" min="0" max="2000" step="100" value="2000" class="locked-range" oninput="syncInput('isay');upd()">
 </div>
 <div class="irow-2col">
-  <div class="irow-2col-item">
-      <div class="col-label">납입 시작</div>
-      <div class="col-ctrl isa">
-        <button class="arr-btn" onclick="stepVal('isastart',-1)">▼</button>
-        <input type="number" id="isastart" value="51" min="40" max="65" step="1"
-          style="color:#444441;background:#F1EFE8;border-color:#B4B2A9;"
-          onblur="onBlurFix('isastart')" oninput="syncSlider('isastart');upd()"><span class="unit-tag">세</span>
-        <button class="arr-btn" onclick="stepVal('isastart',1)">▲</button>
-        <button class="lock-btn locked" id="lock-isastart" onclick="toggleLock('isastart')" title="잠금 해제">🔒</button>
-      </div>
-      <input type="range" id="isastart-r" min="40" max="65" step="1" value="51" class="compact-range locked-range" oninput="syncInput('isastart');upd()">
+  <div class="c2-item">
+    <div class="c2-label">납입 시작</div>
+    <div class="c2-ctrl">
+      <button class="arr-btn" onclick="stepVal('isastart',-1)">▼</button>
+      <input type="number" id="isastart" value="51" min="40" max="65" step="1"
+        class="c2-input" style="color:#444441;background:#F1EFE8;border-color:#B4B2A9;"
+        onblur="onBlurFix('isastart')" oninput="syncSlider('isastart');upd()">
+      <span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('isastart',1)">▲</button>
+      <button class="lock-btn locked" id="lock-isastart" onclick="toggleLock('isastart')" title="잠금 해제">🔒</button>
     </div>
-  <div class="irow-2col-item">
-      <div class="col-label">납입 종료</div>
-      <div class="col-ctrl isa">
-        <button class="arr-btn" onclick="stepVal('isaend',-1)">▼</button>
-        <input type="number" id="isaend" value="57" min="50" max="70" step="1"
-          style="color:#444441;background:#F1EFE8;border-color:#B4B2A9;"
-          onblur="onBlurFix('isaend')" oninput="syncSlider('isaend');upd()"><span class="unit-tag">세</span>
-        <button class="arr-btn" onclick="stepVal('isaend',1)">▲</button>
-        <button class="lock-btn locked" id="lock-isaend" onclick="toggleLock('isaend')" title="잠금 해제">🔒</button>
-      </div>
-      <input type="range" id="isaend-r" min="50" max="70" step="1" value="57" class="compact-range locked-range" oninput="syncInput('isaend');upd()">
+    <input type="range" id="isastart-r" min="40" max="65" step="1" value="51"
+      class="c2-range locked-range" oninput="syncInput('isastart');upd()">
+  </div>
+  <div class="c2-item">
+    <div class="c2-label">납입 종료</div>
+    <div class="c2-ctrl">
+      <button class="arr-btn" onclick="stepVal('isaend',-1)">▼</button>
+      <input type="number" id="isaend" value="57" min="50" max="70" step="1"
+        class="c2-input" style="color:#444441;background:#F1EFE8;border-color:#B4B2A9;"
+        onblur="onBlurFix('isaend')" oninput="syncSlider('isaend');upd()">
+      <span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('isaend',1)">▲</button>
+      <button class="lock-btn locked" id="lock-isaend" onclick="toggleLock('isaend')" title="잠금 해제">🔒</button>
     </div>
+    <input type="range" id="isaend-r" min="50" max="70" step="1" value="57"
+      class="c2-range locked-range" oninput="syncInput('isaend');upd()">
+  </div>
 </div>
 <div style="background:#F5F4F2;border-radius:5px;padding:4px 8px;margin:2px 0 6px;font-size:9px;color:#888;">
   💡 <span id="isa-info">총 납입 기간 계산 중...</span>
 </div>
 <div class="irow isa">
-  <div class="irow-top"><span class="ilabel">인출 시작 나이</span>
+  <div class="irow-top">
+    <span class="ilabel">인출 시작 나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('isaage',-1)">▼</button>
       <input class="ival-input" type="number" id="isaage" value="57" min="55" max="75" step="1" onblur="onBlurFix('isaage')" oninput="syncSlider('isaage');upd()"><span class="unit-tag">세</span>
@@ -651,7 +708,8 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="isaage-r" min="55" max="75" step="1" value="57" class="locked-range" oninput="syncInput('isaage');upd()">
 </div>
 <div class="irow isa">
-  <div class="irow-top"><span class="ilabel">월 인출액 (공백기)</span>
+  <div class="irow-top">
+    <span class="ilabel">월 인출액 (공백기)</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('isam',-5)">▼</button>
       <input class="ival-input" type="number" id="isam" value="90" min="0" max="300" step="5" onblur="onBlurFix('isam')" oninput="syncSlider('isam');upd()"><span class="unit-tag">만원</span>
@@ -662,26 +720,7 @@ input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
   <input type="range" id="isam-r" min="0" max="300" step="5" value="90" class="locked-range" oninput="syncInput('isam');upd()">
 </div>
 </div>
-('isaage')" oninput="syncSlider('isaage');upd()"><span class="unit-tag">세</span>
-      <button class="arr-btn" onclick="stepVal('isaage',1)">▲</button>
-      <button class="lock-btn locked" id="lock-isaage" onclick="toggleLock('isaage')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
-    </div>
-  </div>
-  <input type="range" id="isaage-r" min="55" max="75" step="1" value="57" class="locked-range" oninput="syncInput('isaage');upd()">
-</div>
-  <div class="irow isa">
-  <div class="irow-top">
-    <span class="ilabel">월 인출액 (공백기)</span>
-    <div class="irow-ctrl">
-      <button class="arr-btn" onclick="stepVal('isam',-5)">▼</button>
-      <input class="ival-input" type="number" id="isam" value="90" min="0" max="300" step="5" onblur="onBlurFix('isam')" oninput="syncSlider('isam');upd()"><span class="unit-tag">만원</span>
-      <button class="arr-btn" onclick="stepVal('isam',5)">▲</button>
-      <button class="lock-btn locked" id="lock-isam" onclick="toggleLock('isam')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
-    </div>
-  </div>
-  <input type="range" id="isam-r" min="0" max="300" step="5" value="90" class="locked-range" oninput="syncInput('isam');upd()">
-</div>
-</div>
+
 
 <div class="panel">
   <div class="panel-title">③ 수익률 · 물가상승률</div>
