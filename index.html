@@ -124,6 +124,9 @@ h1{font-size:15px;font-weight:700;color:#111;}
 .ival-input::-webkit-inner-spin-button,
 .ival-input::-webkit-outer-spin-button{-webkit-appearance:none;}
 .ival-input:focus{box-shadow:0 0 0 2px rgba(29,158,117,0.2);}
+.ival-input:disabled{cursor:not-allowed;opacity:0.5;}
+.c2-input:disabled{cursor:not-allowed;opacity:0.5;}
+button:disabled{cursor:not-allowed !important;}
 .unit-tag{font-size:9px;color:#AAB0BB;margin-left:1px;white-space:nowrap;}
 
 /* ── 화살표 & 잠금 버튼 ── */
@@ -140,6 +143,33 @@ h1{font-size:15px;font-weight:700;color:#111;}
 input[type=range]{width:100%;cursor:pointer;height:3px;margin:3px 0 5px;display:block;}
 input[type=range].locked-range{pointer-events:none;opacity:0.3;}
 input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
+/* 슬라이더 핸들 크기 축소 */
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:10px;height:10px;border-radius:50%;
+  background:#888;cursor:pointer;border:1.5px solid #fff;
+  box-shadow:0 0 2px rgba(0,0,0,0.25);}
+input[type=range]::-moz-range-thumb{
+  width:10px;height:10px;border-radius:50%;background:#888;
+  cursor:pointer;border:1.5px solid #fff;box-shadow:0 0 2px rgba(0,0,0,0.25);}
+input[type=range]:hover::-webkit-slider-thumb{background:#555;}
+input[type=range]:hover::-moz-range-thumb{background:#555;}
+/* 색상 클래스별 핸들 색상 */
+.nh  input[type=range]::-webkit-slider-thumb{background:#1D9E75;}
+.mf  input[type=range]::-webkit-slider-thumb{background:#0F6E56;}
+.irp input[type=range]::-webkit-slider-thumb{background:#378ADD;}
+.dc  input[type=range]::-webkit-slider-thumb{background:#7F77DD;}
+.np  input[type=range]::-webkit-slider-thumb{background:#EF9F27;}
+.isa input[type=range]::-webkit-slider-thumb{background:#888780;}
+.exp input[type=range]::-webkit-slider-thumb{background:#D85A30;}
+.base-s input[type=range]::-webkit-slider-thumb{background:#AAB0BB;}
+.nh  input[type=range]::-moz-range-thumb{background:#1D9E75;}
+.mf  input[type=range]::-moz-range-thumb{background:#0F6E56;}
+.irp input[type=range]::-moz-range-thumb{background:#378ADD;}
+.dc  input[type=range]::-moz-range-thumb{background:#7F77DD;}
+.np  input[type=range]::-moz-range-thumb{background:#EF9F27;}
+.isa input[type=range]::-moz-range-thumb{background:#888780;}
+.exp input[type=range]::-moz-range-thumb{background:#D85A30;}
+.base-s input[type=range]::-moz-range-thumb{background:#AAB0BB;}
 
 /* ── 2열 납입 기간 행 ── */
 .irow-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px;}
@@ -417,13 +447,13 @@ button{font-family:inherit;cursor:pointer;}
     <div class="c2-label">납입종료</div>
     <div class="c2-ctrl">
       <button class="arr-btn" onclick="stepVal('nhend',-1)">▼</button>
-      <input type="number" id="nhend" value="57" min="50" max="70" step="1"
+      <input type="number" id="nhend" value="57" min="50" max="75" step="1"
         class="c2-input" style="color:#085041;background:#E1F5EE;border-color:#5DCAA5;"
-        onblur="onBlurFix('nhend')" oninput="syncSlider('nhend');upd()"><span class="unit-tag">세</span>
+        onblur="onBlurFix('nhend')" oninput="document.getElementById('nhend').dataset.manualSet='1';syncSlider('nhend');upd()"><span class="unit-tag">세</span>
       <button class="arr-btn" onclick="stepVal('nhend',1)">▲</button>
       <button class="lock-btn locked" id="lock-nhend" onclick="toggleLock('nhend')">🔒</button>
     </div>
-    <input type="range" id="nhend-r" min="50" max="70" step="1" value="57"
+    <input type="range" id="nhend-r" min="50" max="75" step="1" value="57"
       class="c2-range locked-range" style="accent-color:#1D9E75;" oninput="syncInput('nhend');upd()">
   </div>
 </div><div class="irow nh">
@@ -489,13 +519,13 @@ button{font-family:inherit;cursor:pointer;}
     <div class="c2-label">납입종료</div>
     <div class="c2-ctrl">
       <button class="arr-btn" onclick="stepVal('mfend',-1)">▼</button>
-      <input type="number" id="mfend" value="57" min="50" max="70" step="1"
+      <input type="number" id="mfend" value="57" min="50" max="75" step="1"
         class="c2-input" style="color:#085041;background:#C8EDE1;border-color:#1D9E75;"
-        onblur="onBlurFix('mfend')" oninput="syncSlider('mfend');upd()"><span class="unit-tag">세</span>
+        onblur="onBlurFix('mfend')" oninput="document.getElementById('mfend').dataset.manualSet='1';syncSlider('mfend');upd()"><span class="unit-tag">세</span>
       <button class="arr-btn" onclick="stepVal('mfend',1)">▲</button>
       <button class="lock-btn locked" id="lock-mfend" onclick="toggleLock('mfend')">🔒</button>
     </div>
-    <input type="range" id="mfend-r" min="50" max="70" step="1" value="57"
+    <input type="range" id="mfend-r" min="50" max="75" step="1" value="57"
       class="c2-range locked-range" style="accent-color:#0F6E56;" oninput="syncInput('mfend');upd()">
   </div>
 </div><div class="irow mf">
@@ -561,13 +591,13 @@ button{font-family:inherit;cursor:pointer;}
     <div class="c2-label">납입종료</div>
     <div class="c2-ctrl">
       <button class="arr-btn" onclick="stepVal('irpend',-1)">▼</button>
-      <input type="number" id="irpend" value="57" min="50" max="70" step="1"
+      <input type="number" id="irpend" value="57" min="50" max="75" step="1"
         class="c2-input" style="color:#0C447C;background:#E6F1FB;border-color:#85B7EB;"
-        onblur="onBlurFix('irpend')" oninput="syncSlider('irpend');upd()"><span class="unit-tag">세</span>
+        onblur="onBlurFix('irpend')" oninput="document.getElementById('irpend').dataset.manualSet='1';syncSlider('irpend');upd()"><span class="unit-tag">세</span>
       <button class="arr-btn" onclick="stepVal('irpend',1)">▲</button>
       <button class="lock-btn locked" id="lock-irpend" onclick="toggleLock('irpend')">🔒</button>
     </div>
-    <input type="range" id="irpend-r" min="50" max="70" step="1" value="57"
+    <input type="range" id="irpend-r" min="50" max="75" step="1" value="57"
       class="c2-range locked-range" style="accent-color:#378ADD;" oninput="syncInput('irpend');upd()">
   </div>
 </div><div class="irow irp">
@@ -694,13 +724,13 @@ button{font-family:inherit;cursor:pointer;}
     <div class="c2-label">납입종료</div>
     <div class="c2-ctrl">
       <button class="arr-btn" onclick="stepVal('isaend',-1)">▼</button>
-      <input type="number" id="isaend" value="57" min="50" max="70" step="1"
+      <input type="number" id="isaend" value="57" min="50" max="75" step="1"
         class="c2-input" style="color:#444441;background:#F1EFE8;border-color:#B4B2A9;"
-        onblur="onBlurFix('isaend')" oninput="syncSlider('isaend');upd()"><span class="unit-tag">세</span>
+        onblur="onBlurFix('isaend')" oninput="document.getElementById('isaend').dataset.manualSet='1';syncSlider('isaend');upd()"><span class="unit-tag">세</span>
       <button class="arr-btn" onclick="stepVal('isaend',1)">▲</button>
       <button class="lock-btn locked" id="lock-isaend" onclick="toggleLock('isaend')">🔒</button>
     </div>
-    <input type="range" id="isaend-r" min="50" max="70" step="1" value="57"
+    <input type="range" id="isaend-r" min="50" max="75" step="1" value="57"
       class="c2-range locked-range" style="accent-color:#888780;" oninput="syncInput('isaend');upd()">
   </div>
 </div><div style="background:#F5F4F2;border-radius:5px;padding:4px 7px;margin:2px 0 5px;font-size:9px;color:#888;">💡 <span id="isa-info">계산 중...</span></div>
@@ -847,6 +877,16 @@ const C={
   isa: {fill:'rgba(136,135,128,0.75)',line:'#888780'},
   exp: {line:'#D85A30'},
 };
+
+/* ── 초기 잠금 상태 UI 적용 ── */
+function _initLockStates(){
+  document.querySelectorAll('input[type=range].locked-range').forEach(rng => {
+    const id = rng.id.replace('-r','');
+    const inp = document.getElementById(id);
+    if(inp){ inp.setAttribute('disabled',''); inp.style.opacity='0.5'; inp.style.cursor='not-allowed'; }
+    _setArrBtns(id, true);
+  });
+}
 let sc='base', chartTab='flow', mainChart=null;
 const SA={base:{r:0,inf:0}, opt:{r:2,inf:-0.5}, pes:{r:-2,inf:1}};
 
@@ -854,34 +894,59 @@ const SA={base:{r:0,inf:0}, opt:{r:2,inf:-0.5}, pes:{r:-2,inf:1}};
 function toggleLock(id){
   const rng = document.getElementById(id+'-r');
   const btn = document.getElementById('lock-'+id);
+  const inp = document.getElementById(id);
   if(!rng||!btn) return;
   const isLocked = rng.classList.contains('locked-range');
+
+  // 잠금 해제 → 편집 가능
   if(isLocked){
-    rng.classList.remove('locked-range');
-    rng.classList.add('unlocked-range');
-    btn.classList.remove('locked');
-    btn.classList.add('unlocked');
-    btn.textContent='🔓';
-    btn.title='클릭하여 슬라이더 잠금';
+    rng.classList.replace('locked-range','unlocked-range');
+    btn.classList.replace('locked','unlocked');
+    btn.textContent='🔓'; btn.title='클릭하여 잠금';
+    if(inp){ inp.removeAttribute('disabled'); inp.style.opacity='1'; inp.style.cursor='text'; }
+    // 화살표 버튼 활성화
+    _setArrBtns(id, false);
   } else {
-    rng.classList.remove('unlocked-range');
-    rng.classList.add('locked-range');
-    btn.classList.remove('unlocked');
-    btn.classList.add('locked');
-    btn.textContent='🔒';
-    btn.title='클릭하여 슬라이더 잠금 해제';
+    // 잠금 → 편집 불가
+    rng.classList.replace('unlocked-range','locked-range');
+    btn.classList.replace('unlocked','locked');
+    btn.textContent='🔒'; btn.title='클릭하여 잠금 해제';
+    if(inp){ inp.setAttribute('disabled',''); inp.style.opacity='0.5'; inp.style.cursor='not-allowed'; }
+    // 화살표 버튼 비활성화
+    _setArrBtns(id, true);
   }
 }
 
+// 해당 id에 연결된 ▼▲ 버튼 찾아서 disabled 처리
+function _setArrBtns(id, lock){
+  // arr-btn의 onclick에 id가 포함된 것만 찾기
+  document.querySelectorAll('.arr-btn').forEach(btn => {
+    if(btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'"+id+"'")){
+      btn.disabled = lock;
+      btn.style.opacity = lock ? '0.35' : '1';
+      btn.style.cursor  = lock ? 'not-allowed' : 'pointer';
+    }
+  });
+  // c2-ctrl 안의 arr-btn도 동일하게 처리
+  document.querySelectorAll('.c2-ctrl .arr-btn').forEach(btn => {
+    if(btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'"+id+"'")){
+      btn.disabled = lock;
+      btn.style.opacity = lock ? '0.35' : '1';
+      btn.style.cursor  = lock ? 'not-allowed' : 'pointer';
+    }
+  });
+}
+
 function stepVal(id, delta){
-  const inp = document.getElementById(id);
   const rng = document.getElementById(id+'-r');
+  // 잠금 상태이면 동작 차단
+  if(rng && rng.classList.contains('locked-range')) return;
+  const inp = document.getElementById(id);
   if(!inp||!rng) return;
   let v = parseFloat(inp.value)||0;
   const mn = parseFloat(rng.min), mx = parseFloat(rng.max);
   v = Math.min(mx, Math.max(mn, v + parseFloat(delta)));
   inp.value = v; rng.value = v;
-  // limitCheck 대상 필드 처리
   if(['nhpay','mfpay','irppay'].includes(id)){
     limitCheck(id);
   } else {
@@ -903,6 +968,10 @@ function syncSlider(id){
   const inp = document.getElementById(id);
   const rng = document.getElementById(id+'-r');
   if(!inp || !rng) return;
+  // 잠금 상태이면 인풋 변경도 차단 → 원래 값으로 복원
+  if(rng.classList.contains('locked-range')){
+    inp.value = rng.value; return;
+  }
   const raw = inp.value;
   if(!isCompletedNumber(raw)) return; // 입력 중간 상태면 슬라이더 건드리지 않음
   let v = parseFloat(raw);
@@ -1372,6 +1441,24 @@ function saveState(){
 
 function loadState(){
   try {
+    // 초기화 후 유지값 복원 처리
+    const preserveRaw = localStorage.getItem(STORAGE_KEY + '_preserve');
+    if(preserveRaw){
+      localStorage.removeItem(STORAGE_KEY + '_preserve');
+      const preserved = JSON.parse(preserveRaw);
+      PRESERVE_FIELDS.forEach(id => {
+        if(preserved[id] === undefined) return;
+        const inp = document.getElementById(id);
+        const rng = document.getElementById(id+'-r');
+        if(inp) inp.value = preserved[id];
+        if(rng) rng.value = preserved[id];
+      });
+      // 유지값 즉시 localStorage에 저장
+      setTimeout(()=>saveState(), 100);
+      return true;
+    }
+
+    // 일반 상태 복원
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return false;
     const state = JSON.parse(raw);
@@ -1386,8 +1473,22 @@ function loadState(){
   } catch(e) { return false; }
 }
 
+// 초기화 시 유지할 필드 (계좌별 현재 잔액 · 연납입 · 월납입)
+const PRESERVE_FIELDS = ['nh','nhm','mf','mfm','irp','irpy','tirp','isa','isay'];
+
 function resetState(){
-  try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+  try {
+    // 유지할 값 먼저 수집
+    const preserved = {};
+    PRESERVE_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if(el) preserved[id] = el.value;
+    });
+    // localStorage 초기화
+    localStorage.removeItem(STORAGE_KEY);
+    // 유지값을 별도 키로 보관 (리로드 후 복원)
+    localStorage.setItem(STORAGE_KEY + '_preserve', JSON.stringify(preserved));
+  } catch(e){}
   location.reload();
 }
 
@@ -1661,27 +1762,53 @@ function upd(){
   saveState();
   const p=getP();
 
+  // 납입종료 나이가 기본값(은퇴나이)인 경우 은퇴나이 변경에 자동 추종
+  // _endLocked 플래그가 없는 필드는 은퇴나이와 동기화
+  // 단, 사용자가 수동으로 바꾼 경우는 그 값 유지
+  // → 초기값(57)과 현재 ret이 같으면 자동 추종, 다르면 수동 설정으로 간주
+  ['nhend','mfend','irpend','isaend'].forEach(fid => {
+    const inp = document.getElementById(fid);
+    const rng = document.getElementById(fid+'-r');
+    if(!inp || !rng) return;
+    const cur = parseFloat(inp.value);
+    const stored = parseFloat(inp.dataset.manualSet || '0');
+    // manualSet이 설정되지 않았거나 빈 문자열이면 은퇴나이로 자동 추종
+    if(!inp.dataset.manualSet || inp.dataset.manualSet !== '1'){
+      inp.value = p.ret; rng.value = p.ret;
+    }
+  });
+
   // 자막
   document.getElementById('subtitle').textContent=
     p.age+'세 → '+p.ret+'세 은퇴 · 사적연금 한도 '+p.plimit.toLocaleString()+'만원/년';
   document.getElementById('note-limit').textContent=p.plimit.toLocaleString();
+
+  // ── 납입 종료 나이: 슬라이더 max를 은퇴 나이로 확장 + 기본값 연동 ──
+  // 모든 계좌의 납입종료(end) 슬라이더 max를 은퇴 나이에 맞게 갱신
+  // 단, 사용자가 수동으로 설정한 값은 유지 (강제 변경 안 함)
+  ['nhend','mfend','irpend','isaend'].forEach(fid => {
+    const rng = document.getElementById(fid+'-r');
+    const inp = document.getElementById(fid);
+    if(!rng || !inp) return;
+    // max를 은퇴 나이 + 여유(5년)로 확장 → 수동으로 은퇴 이후도 설정 가능
+    const newMax = p.ret + 5;
+    rng.max = newMax;
+    // 현재 값이 새 max보다 크면 클램핑
+    if(parseFloat(inp.value) > newMax){
+      inp.value = newMax; rng.value = newMax;
+    }
+  });
 
   // ISA 납입 요약 정보 업데이트
   (function(){
     const el = document.getElementById('isa-info');
     if(!el) return;
     const startAge = Math.max(p.age, p.isastart);
-    const endAge   = Math.min(p.ret, p.isaend);
+    const endAge   = p.isaend; // 수동 설정값 그대로 사용
     const payYrs   = Math.max(0, endAge - startAge + 1);
     const totalPay = payYrs * p.isay;
-    // 은퇴 시점 예상 ISA 잔액 (간이 계산)
     const bal = calcISA_FV(p.isa, p.isay, p.age, startAge, endAge, p.ret, p.risa);
     el.textContent = startAge+'세~'+endAge+'세 매년 '+p.isay.toLocaleString()+'만 납입 ('+payYrs+'년, 총 '+totalPay.toLocaleString()+'만) → '+p.ret+'세 시 예상 잔액 약 '+fmtW(bal)+'원';
-    // isaend 슬라이더 최대값을 은퇴 나이에 맞게 동기화
-    const endRng = document.getElementById('isaend-r');
-    const endInp = document.getElementById('isaend');
-    if(endRng) endRng.max = p.ret;
-    if(endInp && parseFloat(endInp.value) > p.ret){ endInp.value = p.ret; if(endRng) endRng.value = p.ret; }
   })();
 
   // 한도 게이지
@@ -1772,6 +1899,7 @@ function upd(){
 }
 
 if(!loadState()) upd(); else upd();
+_initLockStates();
 </script>
 </body>
 </html>
