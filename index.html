@@ -1257,10 +1257,6 @@ function autoSuggest(){
   // 공백기 농협 월 인출: 한도에서 미래에셋 차감
   const nhMon     = Math.min(nhMaxMon, Math.max(0, monLimit - mfMon));
   // 미래에셋 소진 후 농협 증액 가능액
-  // 완성기: 농협 + IRP개인납입 합계 ≤ 사적연금 한도(125만)
-  // IRP 먼저 확보 후 농협이 나머지 한도 사용
-  // (irpMon은 아래 STEP5에서 계산되므로 여기선 임시 0으로 처리, 아래에서 재계산)
-  const nhMonFull = monLimit; // 일단 최대, 아래 irpMon 확정 후 재조정
 
   // STEP 4: 목표 미달 시 ISA 추가 인출로 보완 (공백기 내 전액 소진 허용)
   let isaFinal = isaMonSug;
