@@ -1102,36 +1102,47 @@ function calcISA_FV(curBal, isay, curAge, startAge, endAge, retAge, annualR, isa
   }
 
   // ── ISA: 3년 만기 독립 회차 ──
+  // 핵심: 각 회차 만기 수령금은 별도 운용(CMA 등, 동일 수익률 가정)
+  //       은퇴 시점에 모든 회차 수령금(별도운용 포함) + 마지막 회차 잔액 합산
   const ISA_CYCLE  = 3;
   const ISA_EXEMPT = 200; // 일반형 비과세 한도/회차 (만원)
 
   if(endAge < startAge || startAge >= retAge){
-    // 납입 없이 기존 잔액만 운용
     let bal = curBal;
     for(let age=curAge; age<retAge; age++) bal = bal*growFull;
     return Math.max(0, Math.round(bal));
   }
 
-  // 마지막 회차 계산 (은퇴 시점에 수령하는 잔액)
-  const totalPayYrs  = endAge - startAge + 1;
-  const remainder    = ((totalPayYrs - 1) % ISA_CYCLE) + 1; // 1~3
-  const lastCycleYrs = remainder;
-  const lastStart    = endAge - lastCycleYrs + 1;
+  const totalPayYrs = endAge - startAge + 1;
+  let totalAtRet = 0; // 은퇴 시점 총 공백기 자금
 
-  // 마지막 회차: 0원에서 시작 (이전 회차 수령금 이월 없음)
-  let bal = 0;
-  for(let age=lastStart; age<=endAge; age++){
-    bal = bal*growFull + isay*growDep;
+  // 전체 회차 순회
+  let age = startAge;
+  while(age <= endAge){
+    const cycleEnd  = Math.min(age + ISA_CYCLE - 1, endAge);
+    const cycleYrs  = cycleEnd - age + 1;
+
+    // 이 회차: 0원에서 시작, 납입 후 운용
+    let bal = 0;
+    for(let a=age; a<=cycleEnd; a++){
+      bal = bal*growFull + isay*growDep;
+    }
+
+    // 세후 처리
+    const principal = cycleYrs * isay;
+    const gain      = Math.max(0, bal - principal);
+    const taxable   = Math.max(0, gain - ISA_EXEMPT);
+    const afterTax  = bal - taxable * 0.099;
+
+    // 만기 시점에서 은퇴(retAge)까지 별도 운용 (동일 수익률)
+    const yearsToRet = retAge - cycleEnd - 1; // 만기 다음해부터 은퇴 전까지
+    const grownVal   = afterTax * Math.pow(growFull, Math.max(0, yearsToRet));
+
+    totalAtRet += grownVal;
+    age = cycleEnd + 1;
   }
-  // 납입 종료 후 은퇴까지 운용
-  for(let age=endAge+1; age<retAge; age++){
-    bal = bal*growFull;
-  }
-  // 세후 처리
-  const principal = lastCycleYrs * isay;
-  const gain      = Math.max(0, bal - principal);
-  const taxable   = Math.max(0, gain - ISA_EXEMPT);
-  return Math.max(0, Math.round(bal - taxable * 0.099));
+
+  return Math.max(0, Math.round(totalAtRet));
 }
 
 /* ── 은퇴 시점 미래가치 계산 (월복리, 퇴직IRP 잔액 운용용) ── */
@@ -1257,74 +1268,42 @@ function autoSuggest(){
   }
 
 
-  // ── ISA 3년 주기 비과세 한도 정확 계산 ──
-  // 핵심: 3년 만기 해지 후 재가입 시 이전 잔액 이월 불가
-  //       각 회차는 완전히 독립 (연 2,000만 × 3년 = 최대 6,000만/회차)
-  //       만기 수령금은 생활비 또는 별도 운용 (시뮬레이션상 ISA 잔액에서 분리)
-  // 비과세 한도: 일반형 200만/회차 (서민형 400만)
+  // ── ISA 전 회차 비과세·세금 정보 계산 (안내용) ──
   const ISA_EXEMPT_PER_CYCLE = 200;
-  const ISA_CYCLE_YRS = 3;
-
   (function(){
-    const rm      = p.risa / 100 / 12;
-    const growFull = Math.pow(1 + rm, 12);
-    const growDep  = Math.pow(1 + rm, 11 + 10/30);
-
+    const rm       = p.risa/100/12;
+    const growFull = Math.pow(1+rm,12);
+    const growDep  = Math.pow(1+rm,11+10/30);
     const startAge = Math.max(p.age, p.isastart);
-    const endAge   = Math.min(p.ret - 1, p.isaend);
+    const endAge   = Math.min(p.ret-1, p.isaend);
 
-    let totalExempt  = 0;
-    let totalTaxable = 0;
-    let cycleNum     = 0;
+    let totalExempt=0, totalTaxable=0, cycleNum=0;
+    let totalAtRet=0;
 
-    // 회차별 독립 계산 (이월 없음)
-    let age = startAge;
-    while(age <= endAge) {
+    let age=startAge;
+    while(age<=endAge){
       cycleNum++;
-      const cycleEnd = Math.min(age + ISA_CYCLE_YRS - 1, endAge);
-      const cycleYrs = cycleEnd - age + 1;
-
-      // 이 회차: 잔액 0에서 시작 (이월 없음), 연 2,000만씩 납입
-      let bal = 0;
-      for(let a = age; a <= cycleEnd; a++) {
-        bal = bal * growFull + p.isay * growDep;
-      }
-
-      // 만기 수익 = 잔액 - 납입원금
-      const principal = cycleYrs * p.isay;
-      const gain      = Math.max(0, bal - principal);
-      const exempt    = Math.min(gain, ISA_EXEMPT_PER_CYCLE);
-      const taxable   = Math.max(0, gain - exempt);
-
-      totalExempt  += exempt;
-      totalTaxable += taxable;
-
-      age = cycleEnd + 1;
+      const cycleEnd = Math.min(age+3-1, endAge);
+      const cycleYrs = cycleEnd-age+1;
+      let bal=0;
+      for(let a=age;a<=cycleEnd;a++) bal=bal*growFull+p.isay*growDep;
+      const principal=cycleYrs*p.isay;
+      const gain=Math.max(0,bal-principal);
+      const exempt=Math.min(gain,ISA_EXEMPT_PER_CYCLE);
+      const taxable=Math.max(0,gain-exempt);
+      const afterTax=bal-taxable*0.099;
+      // 만기 후 은퇴까지 별도 운용
+      const yearsToRet=p.ret-cycleEnd-1;
+      totalAtRet += afterTax*Math.pow(growFull,Math.max(0,yearsToRet));
+      totalExempt+=exempt; totalTaxable+=taxable;
+      age=cycleEnd+1;
     }
-
-    // 은퇴 직전 마지막 회차 잔액 = FV (세전)
-    // 마지막 회차만 은퇴 시점에 수령하므로 별도 계산
-    const lastCycleStart = Math.max(startAge, endAge - ((endAge - startAge) % ISA_CYCLE_YRS));
-    const lastCycleYrs   = Math.max(1, endAge - lastCycleStart + 1);
-    let lastBal = 0;
-    for(let a = 0; a < lastCycleYrs; a++) {
-      lastBal = lastBal * growFull + p.isay * growDep;
-    }
-    // 은퇴까지 남은 운용 기간
-    for(let a = endAge + 1; a < p.ret; a++) {
-      lastBal = lastBal * growFull;
-    }
-    const lastGain    = Math.max(0, lastBal - lastCycleYrs * p.isay);
-    const lastExempt  = Math.min(lastGain, ISA_EXEMPT_PER_CYCLE);
-    const lastTaxable = Math.max(0, lastGain - lastExempt);
-    const lastAfterTax = Math.round(lastBal - lastTaxable * 0.099);
-
-    window._isaCalc = {
-      fvAfterTax:   Math.max(0, lastAfterTax), // 은퇴 시점 실수령 잔액 (마지막 회차)
-      cycles:       cycleNum,
-      totalExempt:  Math.round(totalExempt),
+    window._isaCalc={
+      fvAfterTax: Math.round(totalAtRet), // 전 회차 별도운용 포함 57세 총 공백기자금
+      cycles: cycleNum,
+      totalExempt: Math.round(totalExempt),
       totalTaxable: Math.round(totalTaxable),
-      totalTax:     Math.round(totalTaxable * 0.099),
+      totalTax: Math.round(totalTaxable*0.099),
       exemptPerCycle: ISA_EXEMPT_PER_CYCLE
     };
   })();
