@@ -99,18 +99,27 @@ h1{font-size:15px;font-weight:700;color:#111;}
   border-radius:6px;padding:5px 8px;margin:8px 0 5px;}
 .acct-header .dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
 
-/* ── 단일 irow: 그리드 균형 레이아웃 ── */
-.irow{margin-bottom:7px;}
-/* 라벨 : 컨트롤 = 45% : 55% 균형 배분 */
-.irow-top{display:grid;grid-template-columns:1fr auto;align-items:center;
-  gap:6px;margin-bottom:2px;}
-.ilabel{font-size:10px;color:#777;white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;min-width:0;}
-.irow-ctrl{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+/* ── 단일 irow ── */
+.irow{margin-bottom:0px;}
+/* irow 전체: 라벨(위) + 컨트롤(중간) + 슬라이더(아래) 3단 구조 */
+.irow-top{
+  display:grid;
+  grid-template-columns:auto 1fr;  /* 라벨이 왼쪽, 컨트롤이 오른쪽 */
+  align-items:center;
+  gap:4px;
+  padding:4px 0 2px;
+}
+/* 라벨: 2줄까지 허용, 작게 */
+.ilabel{
+  font-size:9px;color:#888;
+  white-space:normal;word-break:keep-all;
+  line-height:1.35;min-width:0;
+}
+.irow-ctrl{display:flex;align-items:center;gap:2px;flex-shrink:0;justify-content:flex-end;}
 
 /* ── 숫자 입력 ── */
-.ival-input{font-size:11px;font-weight:700;padding:2px 4px;border-radius:5px;
-  width:62px;text-align:center;border-width:1.5px;border-style:solid;
+.ival-input{font-size:11px;font-weight:700;padding:2px 3px;border-radius:5px;
+  width:60px;text-align:center;border-width:1.5px;border-style:solid;
   outline:none;-moz-appearance:textfield;}
 .ival-input::-webkit-inner-spin-button,
 .ival-input::-webkit-outer-spin-button{-webkit-appearance:none;}
@@ -118,17 +127,17 @@ h1{font-size:15px;font-weight:700;color:#111;}
 .unit-tag{font-size:9px;color:#AAB0BB;margin-left:1px;white-space:nowrap;}
 
 /* ── 화살표 & 잠금 버튼 ── */
-.arr-btn{width:20px;height:20px;border:1px solid #D0D3DC;border-radius:4px;
-  background:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;
+.arr-btn{width:19px;height:19px;border:1px solid #D0D3DC;border-radius:4px;
+  background:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;
   justify-content:center;padding:0;line-height:1;color:#555;flex-shrink:0;}
 .arr-btn:hover{background:#F0F2F5;}
 .arr-btn:active{background:#E8EAF0;}
-.lock-btn{width:20px;height:20px;border:1px solid #D0D3DC;border-radius:4px;
-  background:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;
+.lock-btn{width:19px;height:19px;border:1px solid #D0D3DC;border-radius:4px;
+  background:#fff;font-size:9px;cursor:pointer;display:flex;align-items:center;
   justify-content:center;padding:0;flex-shrink:0;}
 .lock-btn.locked{background:#FFF8E1;border-color:#EF9F27;}
 .lock-btn.unlocked{background:#E1F5EE;border-color:#5DCAA5;}
-input[type=range]{width:100%;cursor:pointer;height:3px;}
+input[type=range]{width:100%;cursor:pointer;height:3px;margin:3px 0 5px;display:block;}
 input[type=range].locked-range{pointer-events:none;opacity:0.3;}
 input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
 
@@ -342,7 +351,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="life-r" min="75" max="105" step="1" value="90" class="locked-range" oninput="syncInput('life');upd()">
 </div><div class="irow exp">
   <div class="irow-top">
-    <span class="ilabel">월 생활비(현재기준·물가반영)</span>
+    <span class="ilabel">월 생활비<br>(현재기준·물가반영)</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('exp',-5)">▼</button>
       <input class="ival-input" type="number" id="exp" value="225" min="100" max="600" step="5" onblur="onBlurFix('exp')" oninput="syncSlider('exp');upd()"><span class="unit-tag">만원</span>
@@ -353,7 +362,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="exp-r" min="100" max="600" step="5" value="225" class="locked-range" oninput="syncInput('exp');upd()">
 </div><div class="irow exp">
   <div class="irow-top">
-    <span class="ilabel">사적연금 연간 한도</span>
+    <span class="ilabel">사적연금<br>연간 한도</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('plimit',-50)">▼</button>
       <input class="ival-input" type="number" id="plimit" value="1400" min="900" max="1500" step="50" onblur="onBlurFix('plimit')" oninput="syncSlider('plimit');upd()"><span class="unit-tag">만원</span>
@@ -419,7 +428,7 @@ button{font-family:inherit;cursor:pointer;}
   </div>
 </div><div class="irow nh">
   <div class="irow-top">
-    <span class="ilabel">수령 시작 나이</span>
+    <span class="ilabel">수령 시작<br>나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('nhage',-1)">▼</button>
       <input class="ival-input" type="number" id="nhage" value="57" min="55" max="80" step="1" onblur="onBlurFix('nhage')" oninput="syncSlider('nhage');upd()"><span class="unit-tag">세</span>
@@ -430,7 +439,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="nhage-r" min="55" max="80" step="1" value="57" class="locked-range" oninput="syncInput('nhage');upd()">
 </div><div class="irow nh">
   <div class="irow-top">
-    <span class="ilabel">월 수령액 목표</span>
+    <span class="ilabel">월 수령액<br>목표</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('nhpay',-5)">▼</button>
       <input class="ival-input" type="number" id="nhpay" value="70" min="0" max="300" step="5" onblur="onBlurFix('nhpay')" oninput="syncSlider('nhpay');limitCheck('nhpay')"><span class="unit-tag">만원</span>
@@ -491,7 +500,7 @@ button{font-family:inherit;cursor:pointer;}
   </div>
 </div><div class="irow mf">
   <div class="irow-top">
-    <span class="ilabel">수령 시작 나이</span>
+    <span class="ilabel">수령 시작<br>나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('mfage',-1)">▼</button>
       <input class="ival-input" type="number" id="mfage" value="57" min="55" max="80" step="1" onblur="onBlurFix('mfage')" oninput="syncSlider('mfage');upd()"><span class="unit-tag">세</span>
@@ -502,7 +511,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="mfage-r" min="55" max="80" step="1" value="57" class="locked-range" oninput="syncInput('mfage');upd()">
 </div><div class="irow mf">
   <div class="irow-top">
-    <span class="ilabel">월 수령액 목표</span>
+    <span class="ilabel">월 수령액<br>목표</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('mfpay',-5)">▼</button>
       <input class="ival-input" type="number" id="mfpay" value="46" min="0" max="200" step="5" onblur="onBlurFix('mfpay')" oninput="syncSlider('mfpay');limitCheck('mfpay')"><span class="unit-tag">만원</span>
@@ -525,7 +534,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="irp-r" min="0" max="20000" step="500" value="0" class="locked-range" oninput="syncInput('irp');upd()">
 </div><div class="irow irp">
   <div class="irow-top">
-    <span class="ilabel">연납입 (매년 1월 일시납)</span>
+    <span class="ilabel">연납입<br>(매년 1월 일시납)</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('irpy',-50)">▼</button>
       <input class="ival-input" type="number" id="irpy" value="300" min="0" max="1200" step="50" onblur="onBlurFix('irpy')" oninput="syncSlider('irpy');upd()"><span class="unit-tag">만원</span>
@@ -563,7 +572,7 @@ button{font-family:inherit;cursor:pointer;}
   </div>
 </div><div class="irow irp">
   <div class="irow-top">
-    <span class="ilabel">수령 시작 나이</span>
+    <span class="ilabel">수령 시작<br>나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('irpage',-1)">▼</button>
       <input class="ival-input" type="number" id="irpage" value="70" min="55" max="80" step="1" onblur="onBlurFix('irpage')" oninput="syncSlider('irpage');upd()"><span class="unit-tag">세</span>
@@ -574,7 +583,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="irpage-r" min="55" max="80" step="1" value="70" class="locked-range" oninput="syncInput('irpage');upd()">
 </div><div class="irow irp">
   <div class="irow-top">
-    <span class="ilabel">월 수령액 목표</span>
+    <span class="ilabel">월 수령액<br>목표</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('irppay',-5)">▼</button>
       <input class="ival-input" type="number" id="irppay" value="0" min="0" max="150" step="5" onblur="onBlurFix('irppay')" oninput="syncSlider('irppay');limitCheck('irppay')"><span class="unit-tag">만원</span>
@@ -601,7 +610,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="tirp-r" min="0" max="100000" step="1000" value="32000" class="locked-range" oninput="syncInput('tirp');upd()">
 </div><div class="irow dc">
   <div class="irow-top">
-    <span class="ilabel">수령 시작 나이</span>
+    <span class="ilabel">수령 시작<br>나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('tage',-1)">▼</button>
       <input class="ival-input" type="number" id="tage" value="65" min="55" max="80" step="1" onblur="onBlurFix('tage')" oninput="syncSlider('tage');upd()"><span class="unit-tag">세</span>
@@ -624,7 +633,7 @@ button{font-family:inherit;cursor:pointer;}
 </div><hr class="div">
 <div class="acct-header" style="background:#FAEEDA;color:#633806;"><span class="dot" style="background:#EF9F27;"></span>국민연금</div><div class="irow np">
   <div class="irow-top">
-    <span class="ilabel">수령 시작 나이</span>
+    <span class="ilabel">수령 시작<br>나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('npage',-1)">▼</button>
       <input class="ival-input" type="number" id="npage" value="65" min="60" max="70" step="1" onblur="onBlurFix('npage')" oninput="syncSlider('npage');upd()"><span class="unit-tag">세</span>
@@ -658,7 +667,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="isa-r" min="0" max="20000" step="500" value="0" class="locked-range" oninput="syncInput('isa');upd()">
 </div><div class="irow isa">
   <div class="irow-top">
-    <span class="ilabel">연납입 (매년 1월 일시납)</span>
+    <span class="ilabel">연납입<br>(매년 1월 일시납)</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('isay',-100)">▼</button>
       <input class="ival-input" type="number" id="isay" value="2000" min="0" max="2000" step="100" onblur="onBlurFix('isay')" oninput="syncSlider('isay');upd()"><span class="unit-tag">만원</span>
@@ -697,7 +706,7 @@ button{font-family:inherit;cursor:pointer;}
 </div><div style="background:#F5F4F2;border-radius:5px;padding:4px 7px;margin:2px 0 5px;font-size:9px;color:#888;">💡 <span id="isa-info">계산 중...</span></div>
 <div class="irow isa">
   <div class="irow-top">
-    <span class="ilabel">인출 시작 나이</span>
+    <span class="ilabel">인출 시작<br>나이</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('isaage',-1)">▼</button>
       <input class="ival-input" type="number" id="isaage" value="57" min="55" max="75" step="1" onblur="onBlurFix('isaage')" oninput="syncSlider('isaage');upd()"><span class="unit-tag">세</span>
@@ -708,7 +717,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="isaage-r" min="55" max="75" step="1" value="57" class="locked-range" oninput="syncInput('isaage');upd()">
 </div><div class="irow isa">
   <div class="irow-top">
-    <span class="ilabel">월 인출액 (공백기)</span>
+    <span class="ilabel">월 인출액<br>(공백기)</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('isam',-5)">▼</button>
       <input class="ival-input" type="number" id="isam" value="90" min="0" max="300" step="5" onblur="onBlurFix('isam')" oninput="syncSlider('isam');upd()"><span class="unit-tag">만원</span>
@@ -724,7 +733,7 @@ button{font-family:inherit;cursor:pointer;}
 <div class="sec-label">계좌별 수익률</div>
 <div class="irow nh">
   <div class="irow-top">
-    <span class="ilabel">농협 연금저축</span>
+    <span class="ilabel">농협<br>연금저축</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('rnh',-0.5)">▼</button>
       <input class="ival-input" type="number" id="rnh" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rnh')" oninput="syncSlider('rnh');upd()"><span class="unit-tag">%</span>
@@ -735,7 +744,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="rnh-r" min="0" max="15" step="0.5" value="4" class="locked-range" oninput="syncInput('rnh');upd()">
 </div><div class="irow mf">
   <div class="irow-top">
-    <span class="ilabel">미래에셋 연금저축</span>
+    <span class="ilabel">미래에셋<br>연금저축</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('rmf',-0.5)">▼</button>
       <input class="ival-input" type="number" id="rmf" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rmf')" oninput="syncSlider('rmf');upd()"><span class="unit-tag">%</span>
@@ -746,7 +755,7 @@ button{font-family:inherit;cursor:pointer;}
   <input type="range" id="rmf-r" min="0" max="15" step="0.5" value="4" class="locked-range" oninput="syncInput('rmf');upd()">
 </div><div class="irow irp">
   <div class="irow-top">
-    <span class="ilabel">미래에셋 IRP</span>
+    <span class="ilabel">미래에셋<br>IRP</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('rirp',-0.5)">▼</button>
       <input class="ival-input" type="number" id="rirp" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rirp')" oninput="syncSlider('rirp');upd()"><span class="unit-tag">%</span>
@@ -781,7 +790,7 @@ button{font-family:inherit;cursor:pointer;}
 <div class="sec-label">물가상승률</div>
 <div class="irow exp">
   <div class="irow-top">
-    <span class="ilabel">연 물가상승률</span>
+    <span class="ilabel">물가<br>상승률</span>
     <div class="irow-ctrl">
       <button class="arr-btn" onclick="stepVal('inf',-0.5)">▼</button>
       <input class="ival-input" type="number" id="inf" value="2.5" min="0" max="10" step="0.5" onblur="onBlurFix('inf')" oninput="syncSlider('inf');upd()"><span class="unit-tag">%</span>
@@ -1407,7 +1416,7 @@ let _assetChartRef = null; // 자산 차트 인스턴스 참조 저장
 
 function renderAssetTooltip(idx){
   const tip = document.getElementById('chartTooltip');
-  const chart = _assetChartRef;
+  const chart = _assetChartRef || mainChart;
   if(!tip || !chart || idx < 0 || idx >= _chartRows.length) return;
   const row = _chartRows[idx];
   if(!row){ tip.style.display='none'; return; }
@@ -1547,29 +1556,31 @@ document.addEventListener('mousemove', function(e){
 
   // 자산 잔액 탭에서만 근접 포인트 감지
   if(chartTab !== 'asset') return;
-  const chart = _assetChartRef;
-  if(!chart || !_chartRows.length) return;
+  const chart = _assetChartRef || mainChart;
+  if(!chart) return;
+  if(!_chartRows || !_chartRows.length) return;
 
-  // 마우스 X 위치 → 가장 가까운 데이터 인덱스 계산
-  const mouseX = e.clientX - rect.left;
-  const meta   = chart.getDatasetMeta(0);
-  if(!meta || !meta.data || !meta.data.length) return;
+  try {
+    // 마우스 X 위치 → 가장 가까운 데이터 인덱스 계산
+    const mouseX = e.clientX - rect.left;
+    const meta   = chart.getDatasetMeta(0);
+    if(!meta || !meta.data || !meta.data.length) return;
 
-  let closestIdx = 0;
-  let closestDist = Infinity;
-  meta.data.forEach((pt, i) => {
-    const dist = Math.abs(pt.x - mouseX);
-    if(dist < closestDist){ closestDist = dist; closestIdx = i; }
-  });
+    let closestIdx = 0;
+    let closestDist = Infinity;
+    meta.data.forEach((pt, i) => {
+      const dist = Math.abs(pt.x - mouseX);
+      if(dist < closestDist){ closestDist = dist; closestIdx = i; }
+    });
 
-  // 차트 영역 내 x 범위를 벗어난 경우 숨김
-  const firstX = meta.data[0]?.x || 0;
-  const lastX  = meta.data[meta.data.length-1]?.x || 0;
-  if(mouseX < firstX - 20 || mouseX > lastX + 20){
-    tip.style.display='none'; return;
-  }
-
-  renderAssetTooltip(closestIdx);
+    // 차트 영역 좌우 20px 여유 밖이면 숨김
+    const firstX = meta.data[0]?.x || 0;
+    const lastX  = meta.data[meta.data.length-1]?.x || 0;
+    if(mouseX < firstX - 20 || mouseX > lastX + 20){
+      tip.style.display='none'; return;
+    }
+    renderAssetTooltip(closestIdx);
+  } catch(err){ /* 차트 초기화 중 에러 무시 */ }
 });
 
 let _chartRows = []; // 툴팁용 전역 rows 캐시
@@ -1636,12 +1647,13 @@ function drawChart(rows){
       ]},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:false},tooltip:{enabled:false}},
-        // onHover 제거 → mousemove 이벤트에서 가장 가까운 포인트 감지
+        // mousemove 이벤트에서 가장 가까운 포인트 감지
         scales:{
           x:{ticks:{font:{size:9},maxTicksLimit:10,autoSkip:true},grid:{display:false}},
           y:{ticks:{font:{size:9},callback:v=>v+'억'},grid:{color:'rgba(0,0,0,0.04)'}}
         }}
     });
+    _assetChartRef = mainChart; // mousemove 툴팁용 참조 저장
   }
 }
 
