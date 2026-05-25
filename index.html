@@ -91,6 +91,38 @@ td:first-child{text-align:left;}
 tr.cur-row{background:#FAFFFE;}
 .note{font-size:9px;color:#CCC;line-height:1.6;margin-top:5px;}
 button{font-family:inherit;cursor:pointer;}
+
+/* ── 슬라이더 잠금 / 화살표 컨트롤 ── */
+.irow-ctrl{display:flex;align-items:center;gap:3px;}
+.arr-btn{width:20px;height:20px;border:1px solid #D0D3DC;border-radius:4px;background:#fff;
+  font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  padding:0;line-height:1;color:#666;flex-shrink:0;transition:background .15s;}
+.arr-btn:hover{background:#F0F2F5;}
+.arr-btn:active{background:#E8EAF0;}
+.lock-btn{width:20px;height:20px;border:1px solid #D0D3DC;border-radius:4px;background:#fff;
+  font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  padding:0;line-height:1;flex-shrink:0;transition:all .15s;}
+.lock-btn.locked{background:#FFF8E1;border-color:#EF9F27;color:#E65100;}
+.lock-btn.unlocked{background:#E1F5EE;border-color:#5DCAA5;color:#085041;}
+input[type=range].locked-range{pointer-events:none;opacity:0.35;}
+input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
+
+/* ── 차트 커스텀 툴팁 ── */
+.chart-tooltip{
+  position:absolute;pointer-events:none;
+  background:rgba(17,17,17,0.88);
+  backdrop-filter:blur(4px);
+  border-radius:10px;padding:10px 13px;
+  font-size:11px;color:#fff;line-height:1.7;
+  box-shadow:0 4px 20px rgba(0,0,0,0.18);
+  min-width:180px;z-index:100;
+  transition:opacity .15s;
+}
+.chart-tooltip .tt-total{font-size:13px;font-weight:700;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.2);}
+.chart-tooltip .tt-exp{font-size:11px;margin-bottom:2px;}
+.chart-tooltip .tt-net{font-size:11px;font-weight:700;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,0.15);}
+.chart-tooltip .tt-row{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(255,255,255,0.85);}
+.chart-tooltip .tt-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
 @media (max-width:420px){
   html,body{height:auto;overflow:auto;}
   .main-layout{grid-template-columns:1fr;overflow:visible;}
@@ -141,11 +173,66 @@ button{font-family:inherit;cursor:pointer;}
 
 <div class="panel">
   <div class="panel-title">① 기본 정보</div>
-  <div class="irow base-s"><div class="irow-top"><span class="ilabel">현재 나이</span><span><input class="ival-input" type="number" id="age" value="51" min="40" max="70" step="1" onblur="onBlurFix('age')" oninput="syncSlider('age');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="age-r" min="40" max="70" step="1" value="51" oninput="syncInput('age');upd()"></div>
-  <div class="irow base-s"><div class="irow-top"><span class="ilabel">은퇴 나이</span><span><input class="ival-input" type="number" id="ret" value="57" min="50" max="70" step="1" onblur="onBlurFix('ret')" oninput="syncSlider('ret');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="ret-r" min="50" max="70" step="1" value="57" oninput="syncInput('ret');upd()"></div>
-  <div class="irow base-s"><div class="irow-top"><span class="ilabel">기대 수명</span><span><input class="ival-input" type="number" id="life" value="90" min="75" max="105" step="1" onblur="onBlurFix('life')" oninput="syncSlider('life');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="life-r" min="75" max="105" step="1" value="90" oninput="syncInput('life');upd()"></div>
-  <div class="irow exp"><div class="irow-top"><span class="ilabel">월 생활비 목표</span><span><input class="ival-input" type="number" id="exp" value="225" min="100" max="600" step="5" onblur="onBlurFix('exp')" oninput="syncSlider('exp');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="exp-r" min="100" max="600" step="5" value="225" oninput="syncInput('exp');upd()"></div>
-  <div class="irow exp"><div class="irow-top"><span class="ilabel">사적연금 연간 한도</span><span><input class="ival-input" type="number" id="plimit" value="1400" min="900" max="1500" step="50" onblur="onBlurFix('plimit')" oninput="syncSlider('plimit');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="plimit-r" min="900" max="1500" step="50" value="1400" oninput="syncInput('plimit');upd()"></div>
+  <div class="irow base-s">
+  <div class="irow-top">
+    <span class="ilabel">현재 나이</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('age',-1)">◀</button>
+      <input class="ival-input" type="number" id="age" value="51" min="40" max="70" step="1" onblur="onBlurFix('age')" oninput="syncSlider('age');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('age',1)">▶</button>
+      <button class="lock-btn locked" id="lock-age" onclick="toggleLock('age')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="age-r" min="40" max="70" step="1" value="51" class="locked-range" oninput="syncInput('age');upd()">
+</div>
+  <div class="irow base-s">
+  <div class="irow-top">
+    <span class="ilabel">은퇴 나이</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('ret',-1)">◀</button>
+      <input class="ival-input" type="number" id="ret" value="57" min="50" max="70" step="1" onblur="onBlurFix('ret')" oninput="syncSlider('ret');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('ret',1)">▶</button>
+      <button class="lock-btn locked" id="lock-ret" onclick="toggleLock('ret')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="ret-r" min="50" max="70" step="1" value="57" class="locked-range" oninput="syncInput('ret');upd()">
+</div>
+  <div class="irow base-s">
+  <div class="irow-top">
+    <span class="ilabel">기대 수명</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('life',-1)">◀</button>
+      <input class="ival-input" type="number" id="life" value="90" min="75" max="105" step="1" onblur="onBlurFix('life')" oninput="syncSlider('life');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('life',1)">▶</button>
+      <button class="lock-btn locked" id="lock-life" onclick="toggleLock('life')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="life-r" min="75" max="105" step="1" value="90" class="locked-range" oninput="syncInput('life');upd()">
+</div>
+  <div class="irow exp">
+  <div class="irow-top">
+    <span class="ilabel">월 생활비 (현재기준·물가반영)</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('exp',-5)">◀</button>
+      <input class="ival-input" type="number" id="exp" value="225" min="100" max="600" step="5" onblur="onBlurFix('exp')" oninput="syncSlider('exp');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('exp',5)">▶</button>
+      <button class="lock-btn locked" id="lock-exp" onclick="toggleLock('exp')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="exp-r" min="100" max="600" step="5" value="225" class="locked-range" oninput="syncInput('exp');upd()">
+</div>
+  <div class="irow exp">
+  <div class="irow-top">
+    <span class="ilabel">사적연금 연간 한도</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('plimit',-50)">◀</button>
+      <input class="ival-input" type="number" id="plimit" value="1400" min="900" max="1500" step="50" onblur="onBlurFix('plimit')" oninput="syncSlider('plimit');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('plimit',50)">▶</button>
+      <button class="lock-btn locked" id="lock-plimit" onclick="toggleLock('plimit')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="plimit-r" min="900" max="1500" step="50" value="1400" class="locked-range" oninput="syncInput('plimit');upd()">
+</div>
   <button class="suggest-btn" onclick="autoSuggest()">✨ 세금·건보료 최소화 플랜 자동 제안</button>
   <div class="suggest-result" id="suggest-box"></div>
 </div>
@@ -154,24 +241,156 @@ button{font-family:inherit;cursor:pointer;}
   <div class="panel-title">② 계좌별 운영 플랜</div>
 
   <div class="acct-header" style="background:#E1F5EE;color:#085041;"><span class="dot" style="background:#1D9E75;"></span>연금저축 · 농협</div>
-  <div class="irow nh"><div class="irow-top"><span class="ilabel">현재 잔액</span><span><input class="ival-input" type="number" id="nh" value="15000" min="0" max="50000" step="500" onblur="onBlurFix('nh')" oninput="syncSlider('nh');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="nh-r" min="0" max="50000" step="500" value="15000" oninput="syncInput('nh');upd()"></div>
-  <div class="irow nh"><div class="irow-top"><span class="ilabel">월 납입액</span><span><input class="ival-input" type="number" id="nhm" value="50" min="0" max="150" step="5" onblur="onBlurFix('nhm')" oninput="syncSlider('nhm');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="nhm-r" min="0" max="150" step="5" value="50" oninput="syncInput('nhm');upd()"></div>
-  <div class="irow nh"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span><input class="ival-input" type="number" id="nhage" value="57" min="55" max="80" step="1" onblur="onBlurFix('nhage')" oninput="syncSlider('nhage');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="nhage-r" min="55" max="80" step="1" value="57" oninput="syncInput('nhage');upd()"></div>
-  <div class="irow nh"><div class="irow-top"><span class="ilabel">월 수령액 목표</span><span><input class="ival-input" type="number" id="nhpay" value="70" min="0" max="300" step="5" onblur="onBlurFix('nhpay')" oninput="syncSlider('nhpay');limitCheck('nhpay')"><span class="unit-tag">만원</span></span></div><input type="range" id="nhpay-r" min="0" max="300" step="5" value="70" oninput="syncInput('nhpay');limitCheck('nhpay')"></div>
+  <div class="irow nh">
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('nh',-500)">◀</button>
+      <input class="ival-input" type="number" id="nh" value="15000" min="0" max="50000" step="500" onblur="onBlurFix('nh')" oninput="syncSlider('nh');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('nh',500)">▶</button>
+      <button class="lock-btn locked" id="lock-nh" onclick="toggleLock('nh')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="nh-r" min="0" max="50000" step="500" value="15000" class="locked-range" oninput="syncInput('nh');upd()">
+</div>
+  <div class="irow nh">
+  <div class="irow-top">
+    <span class="ilabel">월 납입액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('nhm',-5)">◀</button>
+      <input class="ival-input" type="number" id="nhm" value="50" min="0" max="150" step="5" onblur="onBlurFix('nhm')" oninput="syncSlider('nhm');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('nhm',5)">▶</button>
+      <button class="lock-btn locked" id="lock-nhm" onclick="toggleLock('nhm')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="nhm-r" min="0" max="150" step="5" value="50" class="locked-range" oninput="syncInput('nhm');upd()">
+</div>
+  <div class="irow nh">
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('nhage',-1)">◀</button>
+      <input class="ival-input" type="number" id="nhage" value="57" min="55" max="80" step="1" onblur="onBlurFix('nhage')" oninput="syncSlider('nhage');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('nhage',1)">▶</button>
+      <button class="lock-btn locked" id="lock-nhage" onclick="toggleLock('nhage')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="nhage-r" min="55" max="80" step="1" value="57" class="locked-range" oninput="syncInput('nhage');upd()">
+</div>
+  <div class="irow nh">
+  <div class="irow-top">
+    <span class="ilabel">월 수령액 목표</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('nhpay',-5)">◀</button>
+      <input class="ival-input" type="number" id="nhpay" value="70" min="0" max="300" step="5" onblur="onBlurFix('nhpay')" oninput="syncSlider('nhpay');limitCheck('nhpay')"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('nhpay',5)">▶</button>
+      <button class="lock-btn locked" id="lock-nhpay" onclick="toggleLock('nhpay')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="nhpay-r" min="0" max="300" step="5" value="70" class="locked-range" oninput="syncInput('nhpay');upd()">
+</div>
   <hr class="div">
 
   <div class="acct-header" style="background:#C8EDE1;color:#085041;"><span class="dot" style="background:#0F6E56;"></span>연금저축 · 미래에셋</div>
-  <div class="irow mf"><div class="irow-top"><span class="ilabel">현재 잔액</span><span><input class="ival-input" type="number" id="mf" value="9000" min="0" max="30000" step="500" onblur="onBlurFix('mf')" oninput="syncSlider('mf');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="mf-r" min="0" max="30000" step="500" value="9000" oninput="syncInput('mf');upd()"></div>
-  <div class="irow mf"><div class="irow-top"><span class="ilabel">월 납입액</span><span><input class="ival-input" type="number" id="mfm" value="0" min="0" max="150" step="5" onblur="onBlurFix('mfm')" oninput="syncSlider('mfm');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="mfm-r" min="0" max="150" step="5" value="0" oninput="syncInput('mfm');upd()"></div>
-  <div class="irow mf"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span><input class="ival-input" type="number" id="mfage" value="57" min="55" max="80" step="1" onblur="onBlurFix('mfage')" oninput="syncSlider('mfage');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="mfage-r" min="55" max="80" step="1" value="57" oninput="syncInput('mfage');upd()"></div>
-  <div class="irow mf"><div class="irow-top"><span class="ilabel">월 수령액 목표</span><span><input class="ival-input" type="number" id="mfpay" value="46" min="0" max="200" step="5" onblur="onBlurFix('mfpay')" oninput="syncSlider('mfpay');limitCheck('mfpay')"><span class="unit-tag">만원</span></span></div><input type="range" id="mfpay-r" min="0" max="200" step="5" value="46" oninput="syncInput('mfpay');limitCheck('mfpay')"></div>
+  <div class="irow mf">
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('mf',-500)">◀</button>
+      <input class="ival-input" type="number" id="mf" value="9000" min="0" max="30000" step="500" onblur="onBlurFix('mf')" oninput="syncSlider('mf');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('mf',500)">▶</button>
+      <button class="lock-btn locked" id="lock-mf" onclick="toggleLock('mf')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="mf-r" min="0" max="30000" step="500" value="9000" class="locked-range" oninput="syncInput('mf');upd()">
+</div>
+  <div class="irow mf">
+  <div class="irow-top">
+    <span class="ilabel">월 납입액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('mfm',-5)">◀</button>
+      <input class="ival-input" type="number" id="mfm" value="0" min="0" max="150" step="5" onblur="onBlurFix('mfm')" oninput="syncSlider('mfm');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('mfm',5)">▶</button>
+      <button class="lock-btn locked" id="lock-mfm" onclick="toggleLock('mfm')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="mfm-r" min="0" max="150" step="5" value="0" class="locked-range" oninput="syncInput('mfm');upd()">
+</div>
+  <div class="irow mf">
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('mfage',-1)">◀</button>
+      <input class="ival-input" type="number" id="mfage" value="57" min="55" max="80" step="1" onblur="onBlurFix('mfage')" oninput="syncSlider('mfage');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('mfage',1)">▶</button>
+      <button class="lock-btn locked" id="lock-mfage" onclick="toggleLock('mfage')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="mfage-r" min="55" max="80" step="1" value="57" class="locked-range" oninput="syncInput('mfage');upd()">
+</div>
+  <div class="irow mf">
+  <div class="irow-top">
+    <span class="ilabel">월 수령액 목표</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('mfpay',-5)">◀</button>
+      <input class="ival-input" type="number" id="mfpay" value="46" min="0" max="200" step="5" onblur="onBlurFix('mfpay')" oninput="syncSlider('mfpay');limitCheck('mfpay')"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('mfpay',5)">▶</button>
+      <button class="lock-btn locked" id="lock-mfpay" onclick="toggleLock('mfpay')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="mfpay-r" min="0" max="200" step="5" value="46" class="locked-range" oninput="syncInput('mfpay');upd()">
+</div>
   <hr class="div">
 
   <div class="acct-header" style="background:#E6F1FB;color:#0C447C;"><span class="dot" style="background:#378ADD;"></span>미래에셋 IRP (개인납입)</div>
-  <div class="irow irp"><div class="irow-top"><span class="ilabel">현재 잔액</span><span><input class="ival-input" type="number" id="irp" value="0" min="0" max="20000" step="500" onblur="onBlurFix('irp')" oninput="syncSlider('irp');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="irp-r" min="0" max="20000" step="500" value="0" oninput="syncInput('irp');upd()"></div>
-  <div class="irow irp"><div class="irow-top"><span class="ilabel">월 납입액</span><span><input class="ival-input" type="number" id="irpm" value="25" min="0" max="100" step="5" onblur="onBlurFix('irpm')" oninput="syncSlider('irpm');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="irpm-r" min="0" max="100" step="5" value="25" oninput="syncInput('irpm');upd()"></div>
-  <div class="irow irp"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span><input class="ival-input" type="number" id="irpage" value="70" min="55" max="80" step="1" onblur="onBlurFix('irpage')" oninput="syncSlider('irpage');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="irpage-r" min="55" max="80" step="1" value="70" oninput="syncInput('irpage');upd()"></div>
-  <div class="irow irp"><div class="irow-top"><span class="ilabel">월 수령액 목표</span><span><input class="ival-input" type="number" id="irppay" value="0" min="0" max="150" step="5" onblur="onBlurFix('irppay')" oninput="syncSlider('irppay');limitCheck('irppay')"><span class="unit-tag">만원</span></span></div><input type="range" id="irppay-r" min="0" max="150" step="5" value="0" oninput="syncInput('irppay');limitCheck('irppay')"></div>
+  <div class="irow irp">
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('irp',-500)">◀</button>
+      <input class="ival-input" type="number" id="irp" value="0" min="0" max="20000" step="500" onblur="onBlurFix('irp')" oninput="syncSlider('irp');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('irp',500)">▶</button>
+      <button class="lock-btn locked" id="lock-irp" onclick="toggleLock('irp')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="irp-r" min="0" max="20000" step="500" value="0" class="locked-range" oninput="syncInput('irp');upd()">
+</div>
+  <div class="irow irp">
+  <div class="irow-top">
+    <span class="ilabel">월 납입액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('irpm',-5)">◀</button>
+      <input class="ival-input" type="number" id="irpm" value="25" min="0" max="100" step="5" onblur="onBlurFix('irpm')" oninput="syncSlider('irpm');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('irpm',5)">▶</button>
+      <button class="lock-btn locked" id="lock-irpm" onclick="toggleLock('irpm')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="irpm-r" min="0" max="100" step="5" value="25" class="locked-range" oninput="syncInput('irpm');upd()">
+</div>
+  <div class="irow irp">
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('irpage',-1)">◀</button>
+      <input class="ival-input" type="number" id="irpage" value="70" min="55" max="80" step="1" onblur="onBlurFix('irpage')" oninput="syncSlider('irpage');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('irpage',1)">▶</button>
+      <button class="lock-btn locked" id="lock-irpage" onclick="toggleLock('irpage')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="irpage-r" min="55" max="80" step="1" value="70" class="locked-range" oninput="syncInput('irpage');upd()">
+</div>
+  <div class="irow irp">
+  <div class="irow-top">
+    <span class="ilabel">월 수령액 목표</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('irppay',-5)">◀</button>
+      <input class="ival-input" type="number" id="irppay" value="0" min="0" max="150" step="5" onblur="onBlurFix('irppay')" oninput="syncSlider('irppay');limitCheck('irppay')"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('irppay',5)">▶</button>
+      <button class="lock-btn locked" id="lock-irppay" onclick="toggleLock('irppay')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="irppay-r" min="0" max="150" step="5" value="0" class="locked-range" oninput="syncInput('irppay');upd()">
+</div>
 
   <div class="limit-gauge-wrap">
     <div class="limit-gauge-info"><span>사적연금 합계 (농협+미래에셋+IRP)</span><span id="gauge-text" style="font-weight:700;">-</span></div>
@@ -180,39 +399,226 @@ button{font-family:inherit;cursor:pointer;}
   <hr class="div">
 
   <div class="acct-header" style="background:#EEEDFE;color:#3C3489;"><span class="dot" style="background:#7F77DD;"></span>퇴직연금 (DC → 퇴직 IRP)</div>
-  <div class="irow dc"><div class="irow-top"><span class="ilabel">현재 잔액</span><span><input class="ival-input" type="number" id="tirp" value="32000" min="0" max="100000" step="1000" onblur="onBlurFix('tirp')" oninput="syncSlider('tirp');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="tirp-r" min="0" max="100000" step="1000" value="32000" oninput="syncInput('tirp');upd()"></div>
-  <div class="irow dc"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span><input class="ival-input" type="number" id="tage" value="65" min="55" max="80" step="1" onblur="onBlurFix('tage')" oninput="syncSlider('tage');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="tage-r" min="55" max="80" step="1" value="65" oninput="syncInput('tage');upd()"></div>
-  <div class="irow dc"><div class="irow-top"><span class="ilabel">월 수령액</span><span><input class="ival-input" type="number" id="tm" value="100" min="10" max="500" step="10" onblur="onBlurFix('tm')" oninput="syncSlider('tm');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="tm-r" min="10" max="500" step="10" value="100" oninput="syncInput('tm');upd()"></div>
+  <div class="irow dc">
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('tirp',-1000)">◀</button>
+      <input class="ival-input" type="number" id="tirp" value="32000" min="0" max="100000" step="1000" onblur="onBlurFix('tirp')" oninput="syncSlider('tirp');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('tirp',1000)">▶</button>
+      <button class="lock-btn locked" id="lock-tirp" onclick="toggleLock('tirp')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="tirp-r" min="0" max="100000" step="1000" value="32000" class="locked-range" oninput="syncInput('tirp');upd()">
+</div>
+  <div class="irow dc">
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('tage',-1)">◀</button>
+      <input class="ival-input" type="number" id="tage" value="65" min="55" max="80" step="1" onblur="onBlurFix('tage')" oninput="syncSlider('tage');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('tage',1)">▶</button>
+      <button class="lock-btn locked" id="lock-tage" onclick="toggleLock('tage')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="tage-r" min="55" max="80" step="1" value="65" class="locked-range" oninput="syncInput('tage');upd()">
+</div>
+  <div class="irow dc">
+  <div class="irow-top">
+    <span class="ilabel">월 수령액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('tm',-10)">◀</button>
+      <input class="ival-input" type="number" id="tm" value="100" min="10" max="500" step="10" onblur="onBlurFix('tm')" oninput="syncSlider('tm');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('tm',10)">▶</button>
+      <button class="lock-btn locked" id="lock-tm" onclick="toggleLock('tm')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="tm-r" min="10" max="500" step="10" value="100" class="locked-range" oninput="syncInput('tm');upd()">
+</div>
   <hr class="div">
 
   <div class="acct-header" style="background:#FAEEDA;color:#633806;"><span class="dot" style="background:#EF9F27;"></span>국민연금</div>
-  <div class="irow np"><div class="irow-top"><span class="ilabel">수령 시작 나이</span><span><input class="ival-input" type="number" id="npage" value="65" min="60" max="70" step="1" onblur="onBlurFix('npage')" oninput="syncSlider('npage');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="npage-r" min="60" max="70" step="1" value="65" oninput="syncInput('npage');upd()"></div>
-  <div class="irow np"><div class="irow-top"><span class="ilabel">월 수령액</span><span><input class="ival-input" type="number" id="np" value="170" min="50" max="300" step="5" onblur="onBlurFix('np')" oninput="syncSlider('np');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="np-r" min="50" max="300" step="5" value="170" oninput="syncInput('np');upd()"></div>
+  <div class="irow np">
+  <div class="irow-top">
+    <span class="ilabel">수령 시작 나이</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('npage',-1)">◀</button>
+      <input class="ival-input" type="number" id="npage" value="65" min="60" max="70" step="1" onblur="onBlurFix('npage')" oninput="syncSlider('npage');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('npage',1)">▶</button>
+      <button class="lock-btn locked" id="lock-npage" onclick="toggleLock('npage')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="npage-r" min="60" max="70" step="1" value="65" class="locked-range" oninput="syncInput('npage');upd()">
+</div>
+  <div class="irow np">
+  <div class="irow-top">
+    <span class="ilabel">월 수령액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('np',-5)">◀</button>
+      <input class="ival-input" type="number" id="np" value="170" min="50" max="300" step="5" onblur="onBlurFix('np')" oninput="syncSlider('np');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('np',5)">▶</button>
+      <button class="lock-btn locked" id="lock-np" onclick="toggleLock('np')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="np-r" min="50" max="300" step="5" value="170" class="locked-range" oninput="syncInput('np');upd()">
+</div>
   <hr class="div">
 
   <div class="acct-header" style="background:#F1EFE8;color:#444441;"><span class="dot" style="background:#888780;"></span>ISA</div>
-  <div class="irow isa"><div class="irow-top"><span class="ilabel">현재 잔액</span><span><input class="ival-input" type="number" id="isa" value="0" min="0" max="20000" step="500" onblur="onBlurFix('isa')" oninput="syncSlider('isa');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="isa-r" min="0" max="20000" step="500" value="0" oninput="syncInput('isa');upd()"></div>
-  <div class="irow isa"><div class="irow-top"><span class="ilabel">연 납입액 (매년 1월 일시납)</span><span><input class="ival-input" type="number" id="isay" value="2000" min="0" max="2000" step="100" onblur="onBlurFix('isay')" oninput="syncSlider('isay');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="isay-r" min="0" max="2000" step="100" value="2000" oninput="syncInput('isay');upd()"></div>
-  <div class="irow isa"><div class="irow-top"><span class="ilabel">납입 시작 나이</span><span><input class="ival-input" type="number" id="isastart" value="51" min="40" max="65" step="1" onblur="onBlurFix('isastart')" oninput="syncSlider('isastart');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="isastart-r" min="40" max="65" step="1" value="51" oninput="syncInput('isastart');upd()"></div>
-  <div class="irow isa"><div class="irow-top"><span class="ilabel">납입 종료 나이 (은퇴 시)</span><span><input class="ival-input" type="number" id="isaend" value="57" min="50" max="70" step="1" onblur="onBlurFix('isaend')" oninput="syncSlider('isaend');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="isaend-r" min="50" max="70" step="1" value="57" oninput="syncInput('isaend');upd()"></div>
+  <div class="irow isa">
+  <div class="irow-top">
+    <span class="ilabel">현재 잔액</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('isa',-500)">◀</button>
+      <input class="ival-input" type="number" id="isa" value="0" min="0" max="20000" step="500" onblur="onBlurFix('isa')" oninput="syncSlider('isa');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('isa',500)">▶</button>
+      <button class="lock-btn locked" id="lock-isa" onclick="toggleLock('isa')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="isa-r" min="0" max="20000" step="500" value="0" class="locked-range" oninput="syncInput('isa');upd()">
+</div>
+  <div class="irow isa">
+  <div class="irow-top">
+    <span class="ilabel">연 납입액 (매년 1월 일시납)</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('isay',-100)">◀</button>
+      <input class="ival-input" type="number" id="isay" value="2000" min="0" max="2000" step="100" onblur="onBlurFix('isay')" oninput="syncSlider('isay');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('isay',100)">▶</button>
+      <button class="lock-btn locked" id="lock-isay" onclick="toggleLock('isay')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="isay-r" min="0" max="2000" step="100" value="2000" class="locked-range" oninput="syncInput('isay');upd()">
+</div>
+  <div class="irow isa">
+  <div class="irow-top">
+    <span class="ilabel">납입 시작 나이</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('isastart',-1)">◀</button>
+      <input class="ival-input" type="number" id="isastart" value="51" min="40" max="65" step="1" onblur="onBlurFix('isastart')" oninput="syncSlider('isastart');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('isastart',1)">▶</button>
+      <button class="lock-btn locked" id="lock-isastart" onclick="toggleLock('isastart')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="isastart-r" min="40" max="65" step="1" value="51" class="locked-range" oninput="syncInput('isastart');upd()">
+</div>
+  <div class="irow isa">
+  <div class="irow-top">
+    <span class="ilabel">납입 종료 나이 (은퇴 시)</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('isaend',-1)">◀</button>
+      <input class="ival-input" type="number" id="isaend" value="57" min="50" max="70" step="1" onblur="onBlurFix('isaend')" oninput="syncSlider('isaend');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('isaend',1)">▶</button>
+      <button class="lock-btn locked" id="lock-isaend" onclick="toggleLock('isaend')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="isaend-r" min="50" max="70" step="1" value="57" class="locked-range" oninput="syncInput('isaend');upd()">
+</div>
   <div style="background:#F5F4F2;border-radius:5px;padding:5px 8px;margin:2px 0 7px;font-size:9px;color:#888;">
     💡 <span id="isa-info">총 납입 기간 계산 중...</span>
   </div>
-  <div class="irow isa"><div class="irow-top"><span class="ilabel">인출 시작 나이</span><span><input class="ival-input" type="number" id="isaage" value="57" min="55" max="75" step="1" onblur="onBlurFix('isaage')" oninput="syncSlider('isaage');upd()"><span class="unit-tag">세</span></span></div><input type="range" id="isaage-r" min="55" max="75" step="1" value="57" oninput="syncInput('isaage');upd()"></div>
-  <div class="irow isa"><div class="irow-top"><span class="ilabel">월 인출액 (공백기)</span><span><input class="ival-input" type="number" id="isam" value="90" min="0" max="300" step="5" onblur="onBlurFix('isam')" oninput="syncSlider('isam');upd()"><span class="unit-tag">만원</span></span></div><input type="range" id="isam-r" min="0" max="300" step="5" value="90" oninput="syncInput('isam');upd()"></div>
+  <div class="irow isa">
+  <div class="irow-top">
+    <span class="ilabel">인출 시작 나이</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('isaage',-1)">◀</button>
+      <input class="ival-input" type="number" id="isaage" value="57" min="55" max="75" step="1" onblur="onBlurFix('isaage')" oninput="syncSlider('isaage');upd()"><span class="unit-tag">세</span>
+      <button class="arr-btn" onclick="stepVal('isaage',1)">▶</button>
+      <button class="lock-btn locked" id="lock-isaage" onclick="toggleLock('isaage')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="isaage-r" min="55" max="75" step="1" value="57" class="locked-range" oninput="syncInput('isaage');upd()">
+</div>
+  <div class="irow isa">
+  <div class="irow-top">
+    <span class="ilabel">월 인출액 (공백기)</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('isam',-5)">◀</button>
+      <input class="ival-input" type="number" id="isam" value="90" min="0" max="300" step="5" onblur="onBlurFix('isam')" oninput="syncSlider('isam');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('isam',5)">▶</button>
+      <button class="lock-btn locked" id="lock-isam" onclick="toggleLock('isam')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="isam-r" min="0" max="300" step="5" value="90" class="locked-range" oninput="syncInput('isam');upd()">
+</div>
 </div>
 
 <div class="panel">
   <div class="panel-title">③ 수익률 · 물가상승률</div>
   <div class="sec-label">계좌별 수익률 예상</div>
-  <div class="irow nh"><div class="irow-top"><span class="ilabel" style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>농협 연금저축</span><span><input class="ival-input" type="number" id="rnh" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rnh')" oninput="syncSlider('rnh');upd()"><span class="unit-tag">%</span></span></div><input type="range" id="rnh-r" min="0" max="15" step="0.5" value="4" oninput="syncInput('rnh');upd()"></div>
-  <div class="irow mf"><div class="irow-top"><span class="ilabel" style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:2px;background:#0F6E56;display:inline-block;"></span>미래에셋 연금저축</span><span><input class="ival-input" type="number" id="rmf" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rmf')" oninput="syncSlider('rmf');upd()"><span class="unit-tag">%</span></span></div><input type="range" id="rmf-r" min="0" max="15" step="0.5" value="4" oninput="syncInput('rmf');upd()"></div>
-  <div class="irow irp"><div class="irow-top"><span class="ilabel" style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:2px;background:#378ADD;display:inline-block;"></span>미래에셋 IRP</span><span><input class="ival-input" type="number" id="rirp" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rirp')" oninput="syncSlider('rirp');upd()"><span class="unit-tag">%</span></span></div><input type="range" id="rirp-r" min="0" max="15" step="0.5" value="4" oninput="syncInput('rirp');upd()"></div>
-  <div class="irow dc"><div class="irow-top"><span class="ilabel" style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:2px;background:#7F77DD;display:inline-block;"></span>퇴직연금</span><span><input class="ival-input" type="number" id="rtirp" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rtirp')" oninput="syncSlider('rtirp');upd()"><span class="unit-tag">%</span></span></div><input type="range" id="rtirp-r" min="0" max="15" step="0.5" value="4" oninput="syncInput('rtirp');upd()"></div>
-  <div class="irow isa"><div class="irow-top"><span class="ilabel" style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:2px;background:#888780;display:inline-block;"></span>ISA</span><span><input class="ival-input" type="number" id="risa" value="7" min="0" max="20" step="0.5" onblur="onBlurFix('risa')" oninput="syncSlider('risa');upd()"><span class="unit-tag">%</span></span></div><input type="range" id="risa-r" min="0" max="20" step="0.5" value="7" oninput="syncInput('risa');upd()"></div>
+  <div class="irow nh">
+  <div class="irow-top">
+    <span class="ilabel"></span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('rnh',-0.5)">◀</button>
+      <input class="ival-input" type="number" id="rnh" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rnh')" oninput="syncSlider('rnh');upd()"><span class="unit-tag">%</span>
+      <button class="arr-btn" onclick="stepVal('rnh',0.5)">▶</button>
+      <button class="lock-btn locked" id="lock-rnh" onclick="toggleLock('rnh')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="rnh-r" min="0" max="15" step="0.5" value="4" class="locked-range" oninput="syncInput('rnh');upd()">
+</div>
+  <div class="irow mf">
+  <div class="irow-top">
+    <span class="ilabel"></span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('rmf',-0.5)">◀</button>
+      <input class="ival-input" type="number" id="rmf" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rmf')" oninput="syncSlider('rmf');upd()"><span class="unit-tag">%</span>
+      <button class="arr-btn" onclick="stepVal('rmf',0.5)">▶</button>
+      <button class="lock-btn locked" id="lock-rmf" onclick="toggleLock('rmf')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="rmf-r" min="0" max="15" step="0.5" value="4" class="locked-range" oninput="syncInput('rmf');upd()">
+</div>
+  <div class="irow irp">
+  <div class="irow-top">
+    <span class="ilabel"></span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('rirp',-0.5)">◀</button>
+      <input class="ival-input" type="number" id="rirp" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rirp')" oninput="syncSlider('rirp');upd()"><span class="unit-tag">%</span>
+      <button class="arr-btn" onclick="stepVal('rirp',0.5)">▶</button>
+      <button class="lock-btn locked" id="lock-rirp" onclick="toggleLock('rirp')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="rirp-r" min="0" max="15" step="0.5" value="4" class="locked-range" oninput="syncInput('rirp');upd()">
+</div>
+  <div class="irow dc">
+  <div class="irow-top">
+    <span class="ilabel"></span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('rtirp',-0.5)">◀</button>
+      <input class="ival-input" type="number" id="rtirp" value="4" min="0" max="15" step="0.5" onblur="onBlurFix('rtirp')" oninput="syncSlider('rtirp');upd()"><span class="unit-tag">%</span>
+      <button class="arr-btn" onclick="stepVal('rtirp',0.5)">▶</button>
+      <button class="lock-btn locked" id="lock-rtirp" onclick="toggleLock('rtirp')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="rtirp-r" min="0" max="15" step="0.5" value="4" class="locked-range" oninput="syncInput('rtirp');upd()">
+</div>
+  <div class="irow isa">
+  <div class="irow-top">
+    <span class="ilabel"></span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('risa',-0.5)">◀</button>
+      <input class="ival-input" type="number" id="risa" value="7" min="0" max="20" step="0.5" onblur="onBlurFix('risa')" oninput="syncSlider('risa');upd()"><span class="unit-tag">%</span>
+      <button class="arr-btn" onclick="stepVal('risa',0.5)">▶</button>
+      <button class="lock-btn locked" id="lock-risa" onclick="toggleLock('risa')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="risa-r" min="0" max="20" step="0.5" value="7" class="locked-range" oninput="syncInput('risa');upd()">
+</div>
   <hr class="div">
   <div class="sec-label">물가상승률</div>
-  <div class="irow exp"><div class="irow-top"><span class="ilabel">연 물가상승률</span><span><input class="ival-input" type="number" id="inf" value="2.5" min="0" max="10" step="0.5" onblur="onBlurFix('inf')" oninput="syncSlider('inf');upd()"><span class="unit-tag">%</span></span></div><input type="range" id="inf-r" min="0" max="10" step="0.5" value="2.5" oninput="syncInput('inf');upd()"></div>
+  <div class="irow exp">
+  <div class="irow-top">
+    <span class="ilabel">연 물가상승률</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('inf',-0.5)">◀</button>
+      <input class="ival-input" type="number" id="inf" value="2.5" min="0" max="10" step="0.5" onblur="onBlurFix('inf')" oninput="syncSlider('inf');upd()"><span class="unit-tag">%</span>
+      <button class="arr-btn" onclick="stepVal('inf',0.5)">▶</button>
+      <button class="lock-btn locked" id="lock-inf" onclick="toggleLock('inf')" title="클릭하여 슬라이더 잠금 해제">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="inf-r" min="0" max="10" step="0.5" value="2.5" class="locked-range" oninput="syncInput('inf');upd()">
+</div>
 </div>
 
 </div><!-- left-panel -->
@@ -226,7 +632,10 @@ button{font-family:inherit;cursor:pointer;}
       </div>
       <div class="legend" id="chart-legend"></div>
     </div>
-    <div style="position:relative;width:100%;height:255px;"><canvas id="mainChart"></canvas></div>
+    <div style="position:relative;width:100%;height:255px;">
+  <canvas id="mainChart"></canvas>
+  <div class="chart-tooltip" id="chartTooltip" style="display:none;"></div>
+</div>
   </div>
   <div class="chart-wrap">
     <div style="font-size:11px;font-weight:700;color:#555;margin-bottom:7px;">시기별 수입 구조</div>
@@ -259,6 +668,45 @@ const C={
 };
 let sc='base', chartTab='flow', mainChart=null;
 const SA={base:{r:0,inf:0}, opt:{r:2,inf:-0.5}, pes:{r:-2,inf:1}};
+
+/* ── 슬라이더 잠금/화살표 제어 ── */
+function toggleLock(id){
+  const rng = document.getElementById(id+'-r');
+  const btn = document.getElementById('lock-'+id);
+  if(!rng||!btn) return;
+  const isLocked = rng.classList.contains('locked-range');
+  if(isLocked){
+    rng.classList.remove('locked-range');
+    rng.classList.add('unlocked-range');
+    btn.classList.remove('locked');
+    btn.classList.add('unlocked');
+    btn.textContent='🔓';
+    btn.title='클릭하여 슬라이더 잠금';
+  } else {
+    rng.classList.remove('unlocked-range');
+    rng.classList.add('locked-range');
+    btn.classList.remove('unlocked');
+    btn.classList.add('locked');
+    btn.textContent='🔒';
+    btn.title='클릭하여 슬라이더 잠금 해제';
+  }
+}
+
+function stepVal(id, delta){
+  const inp = document.getElementById(id);
+  const rng = document.getElementById(id+'-r');
+  if(!inp||!rng) return;
+  let v = parseFloat(inp.value)||0;
+  const mn = parseFloat(rng.min), mx = parseFloat(rng.max);
+  v = Math.min(mx, Math.max(mn, v + parseFloat(delta)));
+  inp.value = v; rng.value = v;
+  // limitCheck 대상 필드 처리
+  if(['nhpay','mfpay','irppay'].includes(id)){
+    limitCheck(id);
+  } else {
+    upd();
+  }
+}
 
 /* ── 동기화 ── */
 // 숫자 입력 중 중간 상태(공백·마이너스·소수점만 있는 경우)는 슬라이더/계산에 반영하지 않음
@@ -653,7 +1101,82 @@ function getP(){
 function setSc(s,btn){ sc=s; document.querySelectorAll('.sc-btn').forEach(b=>b.className='sc-btn'); btn.className='sc-btn on-'+s; upd(); }
 function setTab(t){ chartTab=t; ['flow','asset'].forEach(x=>document.getElementById('tb-'+x).className='tab-btn'+(x===t?' on':'')); upd(); }
 
+/* ── 커스텀 차트 툴팁 ── */
+const C_MAP = {
+  '농협연금저축': '#1D9E75', '미래에셋연금저축': '#0F6E56',
+  'IRP(개인납입)': '#378ADD', '국민연금': '#EF9F27',
+  '퇴직IRP': '#7F77DD', 'ISA인출': '#888780',
+};
+
+function showCustomTooltip(evt, activeEls, chart){
+  const tip = document.getElementById('chartTooltip');
+  if(!tip) return;
+  if(!activeEls || activeEls.length === 0){
+    tip.style.display='none'; return;
+  }
+  const idx = activeEls[0].index;
+  const row = _chartRows[idx] || null;
+  if(!row){ tip.style.display='none'; return; }
+
+  const totalInc = row.totalInc || 0;
+  const curExp   = row.curExp   || 0;
+  const net      = totalInc - curExp;
+  const netColor = net >= 0 ? '#4ADE80' : '#FC8181';
+  const netLabel = net >= 0 ? `+${net}만 여유` : `${net}만 부족`;
+
+  let rows_html = '';
+  const items = [
+    {label:'농협연금저축', val:row.nhInc, dot:'#1D9E75'},
+    {label:'미래에셋연금저축', val:row.mfInc, dot:'#0F6E56'},
+    {label:'IRP(개인납입)', val:row.irpInc, dot:'#378ADD'},
+    {label:'국민연금', val:row.npInc, dot:'#EF9F27'},
+    {label:'퇴직IRP', val:row.tirpInc, dot:'#7F77DD'},
+    {label:'ISA인출', val:row.isaInc, dot:'#888780'},
+  ];
+  items.forEach(it=>{
+    if((it.val||0)>0){
+      rows_html += `<div class="tt-row"><span class="tt-dot" style="background:${it.dot}"></span>${it.label}: <b>${it.val}만</b></div>`;
+    }
+  });
+
+  tip.innerHTML = `
+    <div class="tt-total">📅 ${row.label} &nbsp;|&nbsp; 월 수령 합계 <b style="color:#4ADE80">${totalInc}만원</b></div>
+    <div class="tt-exp">📉 월 생활비 예측: <b style="color:#FC8181">${curExp}만원</b></div>
+    <div class="tt-net" style="color:${netColor};">${net>=0?'✅':'⚠️'} ${netLabel}</div>
+    ${rows_html}
+  `;
+
+  // 위치 계산
+  const canvasRect = chart.canvas.getBoundingClientRect();
+  const wrapRect   = chart.canvas.parentElement.getBoundingClientRect();
+  const meta = chart.getDatasetMeta(0);
+  const bar  = meta.data[idx];
+  let x = bar ? bar.x + 10 : evt.x - wrapRect.left;
+  let y = 8;
+  // 오른쪽 넘치면 왼쪽으로
+  if(x + 200 > wrapRect.width) x = x - 220;
+  tip.style.left   = x + 'px';
+  tip.style.top    = y + 'px';
+  tip.style.display= 'block';
+  tip.style.opacity= '0.95';
+}
+
+// 캔버스 밖으로 나가면 툴팁 숨김
+document.addEventListener('mousemove', function(e){
+  const canvas = document.getElementById('mainChart');
+  const tip    = document.getElementById('chartTooltip');
+  if(!canvas||!tip) return;
+  const rect = canvas.getBoundingClientRect();
+  if(e.clientX < rect.left || e.clientX > rect.right ||
+     e.clientY < rect.top  || e.clientY > rect.bottom){
+    tip.style.display='none';
+  }
+});
+
+let _chartRows = []; // 툴팁용 전역 rows 캐시
+
 function drawChart(rows){
+  _chartRows = rows; // 툴팁에서 접근
   if(mainChart){ mainChart.destroy(); mainChart=null; }
   const ctx=document.getElementById('mainChart').getContext('2d');
 
@@ -665,7 +1188,7 @@ function drawChart(rows){
       {c:C.np.fill, l:'국민연금'},
       {c:C.dc.fill, l:'퇴직IRP'},
       {c:C.isa.fill,l:'ISA인출'},
-      {c:C.exp.line,l:'생활비(선)',dashed:true},
+      {c:C.exp.line,l:'생활비예측(선)',dashed:true},
     ].map(x=>`<span class="leg-item"><span class="leg-swatch" style="${x.dashed?'background:transparent;border:2px dashed '+x.c+';':'background:'+x.c+';'}"></span>${x.l}</span>`).join('');
 
     mainChart=new Chart(ctx,{type:'bar',
@@ -676,13 +1199,16 @@ function drawChart(rows){
         {label:'국민연금',         data:rows.map(r=>r.npInc),   backgroundColor:C.np.fill, stack:'s'},
         {label:'퇴직IRP',          data:rows.map(r=>r.tirpInc), backgroundColor:C.dc.fill, stack:'s'},
         {label:'ISA인출',          data:rows.map(r=>r.isaInc),  backgroundColor:C.isa.fill,stack:'s'},
-        {label:'생활비',           data:rows.map(r=>r.curExp),
+        {label:'생활비예측(선)',           data:rows.map(r=>r.curExp),
           type:'line',borderColor:C.exp.line,borderWidth:2.5,borderDash:[5,3],
-          pointRadius:0,fill:false,order:0}
+          pointRadius:3,pointHoverRadius:6,pointBackgroundColor:C.exp.line,
+          pointBorderColor:'#fff',pointBorderWidth:1.5,
+          fill:false,order:0}
       ]},
       options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,
-          callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+'만원'}}},
+        plugins:{legend:{display:false},tooltip:{enabled:false},
+          annotation:{}},
+        onHover:(evt,els,chart)=>showCustomTooltip(evt,els,chart),
         scales:{
           x:{stacked:true,ticks:{font:{size:9},maxTicksLimit:10,autoSkip:true},grid:{display:false}},
           y:{stacked:true,ticks:{font:{size:9},callback:v=>v+'만'},grid:{color:'rgba(0,0,0,0.04)'}}
