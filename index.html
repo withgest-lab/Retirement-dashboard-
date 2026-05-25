@@ -79,7 +79,7 @@ h1{font-size:15px;font-weight:700;color:#111;}
 
 /* ── 카드 패널 ── */
 .panel{background:#fff;border:1px solid #E8EAF0;border-radius:10px;
-  padding:10px 12px;margin-bottom:8px;}
+  padding:10px 14px;margin-bottom:8px;}
 .panel-title{font-size:11px;font-weight:700;color:#333;
   margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #F0F2F5;}
 
@@ -96,19 +96,21 @@ h1{font-size:15px;font-weight:700;color:#111;}
 
 /* ── 계좌 헤더 ── */
 .acct-header{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
-  border-radius:6px;padding:4px 7px;margin:7px 0 5px;}
+  border-radius:6px;padding:5px 8px;margin:8px 0 5px;}
 .acct-header .dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
 
-/* ── 단일 irow ── */
+/* ── 단일 irow: 그리드 균형 레이아웃 ── */
 .irow{margin-bottom:7px;}
-.irow-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;}
+/* 라벨 : 컨트롤 = 45% : 55% 균형 배분 */
+.irow-top{display:grid;grid-template-columns:1fr auto;align-items:center;
+  gap:6px;margin-bottom:2px;}
 .ilabel{font-size:10px;color:#777;white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;max-width:110px;}
+  text-overflow:ellipsis;min-width:0;}
 .irow-ctrl{display:flex;align-items:center;gap:2px;flex-shrink:0;}
 
 /* ── 숫자 입력 ── */
 .ival-input{font-size:11px;font-weight:700;padding:2px 4px;border-radius:5px;
-  width:68px;text-align:center;border-width:1.5px;border-style:solid;
+  width:62px;text-align:center;border-width:1.5px;border-style:solid;
   outline:none;-moz-appearance:textfield;}
 .ival-input::-webkit-inner-spin-button,
 .ival-input::-webkit-outer-spin-button{-webkit-appearance:none;}
@@ -116,13 +118,13 @@ h1{font-size:15px;font-weight:700;color:#111;}
 .unit-tag{font-size:9px;color:#AAB0BB;margin-left:1px;white-space:nowrap;}
 
 /* ── 화살표 & 잠금 버튼 ── */
-.arr-btn{width:18px;height:18px;border:1px solid #D0D3DC;border-radius:3px;
-  background:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;
-  justify-content:center;padding:0;line-height:1;color:#666;flex-shrink:0;}
+.arr-btn{width:20px;height:20px;border:1px solid #D0D3DC;border-radius:4px;
+  background:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;padding:0;line-height:1;color:#555;flex-shrink:0;}
 .arr-btn:hover{background:#F0F2F5;}
 .arr-btn:active{background:#E8EAF0;}
-.lock-btn{width:18px;height:18px;border:1px solid #D0D3DC;border-radius:3px;
-  background:#fff;font-size:9px;cursor:pointer;display:flex;align-items:center;
+.lock-btn{width:20px;height:20px;border:1px solid #D0D3DC;border-radius:4px;
+  background:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;
   justify-content:center;padding:0;flex-shrink:0;}
 .lock-btn.locked{background:#FFF8E1;border-color:#EF9F27;}
 .lock-btn.unlocked{background:#E1F5EE;border-color:#5DCAA5;}
@@ -131,11 +133,11 @@ input[type=range].locked-range{pointer-events:none;opacity:0.3;}
 input[type=range].unlocked-range{pointer-events:auto;opacity:1;}
 
 /* ── 2열 납입 기간 행 ── */
-.irow-2col{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px;}
+.irow-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px;}
 .c2-item{display:flex;flex-direction:column;gap:2px;}
-.c2-label{font-size:9px;color:#AAB0BB;font-weight:600;}
-.c2-ctrl{display:flex;align-items:center;gap:2px;}
-.c2-input{font-size:11px;font-weight:700;width:44px;text-align:center;
+.c2-label{font-size:9px;color:#888;font-weight:600;margin-bottom:1px;}
+.c2-ctrl{display:flex;align-items:center;gap:2px;justify-content:center;}
+.c2-input{font-size:11px;font-weight:700;width:46px;text-align:center;
   border-width:1.5px;border-style:solid;border-radius:4px;
   padding:2px 3px;outline:none;-moz-appearance:textfield;}
 .c2-input::-webkit-inner-spin-button,
@@ -976,13 +978,22 @@ function calcFV(pv, monthly, years, annualR){
   return Math.max(0, Math.round(pv*grow + monthly*(grow-1)/rm));
 }
 
-/* ── 은퇴 후 잔액 시뮬레이션 (월복리, 연 인출) ── */
-// 매년 말 잔액: B_n = B_{n-1} * (1+r)^12 - withdrawal*12
-// 단 인출이 잔액을 초과하면 0으로 클램핑
+/* ── 은퇴 후 잔액 시뮬레이션 (월복리, 매월 균등 인출) ──
+   정확한 금융수학 공식: B = PV*(1+r)^12 - PMT*((1+r)^12 - 1)/r
+   → 매월 초 인출 후 월복리 적용 (연금현가 역산)
+   r=0일 때는 단순: B = PV - PMT*12
+*/
 function stepBalance(bal, annualR, monthlyOut){
   if(bal<=0) return 0;
-  const grow = Math.pow(1+annualR/100/12, 12);
-  return Math.max(0, bal*grow - monthlyOut*12);
+  if(monthlyOut<=0){
+    // 인출 없이 운용만
+    return Math.max(0, bal * Math.pow(1+annualR/100/12, 12));
+  }
+  const rm = annualR/100/12;
+  if(rm===0) return Math.max(0, bal - monthlyOut*12);
+  const grow = Math.pow(1+rm, 12);
+  // 매월 균등 인출 후 복리: B = PV*grow - PMT*(grow-1)/rm
+  return Math.max(0, bal*grow - monthlyOut*(grow-1)/rm);
 }
 
 /* ── 한도 초과 방지 ── */
@@ -1391,19 +1402,16 @@ function setTab(t){ chartTab=t; ['flow','asset'].forEach(x=>document.getElementB
 
 /* ── 자산 잔액 차트 커스텀 툴팁 ── */
 // 위치: 수평만 이동(차트 내 비율), 수직은 항상 상단 고정
-function showAssetTooltip(evt, activeEls, chart){
-  const tip = document.getElementById('chartTooltip');
-  if(!tip) return;
-  if(!activeEls || activeEls.length === 0){
-    tip.style.opacity='0';
-    tip.style.pointerEvents='none';
-    return;
-  }
-  const idx = activeEls[0].index;
-  const row = _chartRows[idx];
-  if(!row){ tip.style.opacity='0'; return; }
+/* 자산 잔액 차트: 마우스 근접 감지용 상태 */
+let _assetChartRef = null; // 자산 차트 인스턴스 참조 저장
 
-  // 내용 구성: 연금저축합계 > 농협/미래에셋/IRP / 퇴직연금 / ISA
+function renderAssetTooltip(idx){
+  const tip = document.getElementById('chartTooltip');
+  const chart = _assetChartRef;
+  if(!tip || !chart || idx < 0 || idx >= _chartRows.length) return;
+  const row = _chartRows[idx];
+  if(!row){ tip.style.display='none'; return; }
+
   const privTotal = row.privB || 0;
   const nhB   = row.nhB_억  || 0;
   const mfB   = row.mfB_억  || 0;
@@ -1415,23 +1423,23 @@ function showAssetTooltip(evt, activeEls, chart){
   tip.innerHTML = `
     <div class="tt-total">📅 ${row.label} &nbsp;|&nbsp; 총 자산 <b style="color:#C084FC">${total}억원</b></div>
     <div style="height:1px;background:rgba(255,255,255,0.15);margin:5px 0;"></div>
-    <div class="tt-row" style="margin-bottom:5px;">
+    <div class="tt-row" style="margin-bottom:4px;">
       <span class="tt-dot" style="background:#1D9E75"></span>
       <span style="font-weight:700;">연금저축 합계 ${privTotal}억</span>
     </div>
-    <div class="tt-row" style="padding-left:12px;">
-      <span class="tt-dot" style="background:#1D9E75;opacity:.7"></span>
-      <span>농협 연금저축: ${nhB}억</span>
+    <div class="tt-row" style="padding-left:11px;">
+      <span class="tt-dot" style="background:#1D9E75;opacity:.6"></span>
+      <span>농협: ${nhB}억</span>
     </div>
-    <div class="tt-row" style="padding-left:12px;">
+    <div class="tt-row" style="padding-left:11px;">
       <span class="tt-dot" style="background:#0F6E56;opacity:.8"></span>
-      <span>미래에셋 연금저축: ${mfB}억</span>
+      <span>미래에셋: ${mfB}억</span>
     </div>
-    <div class="tt-row" style="padding-left:12px;margin-bottom:5px;">
+    <div class="tt-row" style="padding-left:11px;margin-bottom:4px;">
       <span class="tt-dot" style="background:#378ADD;opacity:.8"></span>
-      <span>IRP (개인납입): ${irpB2}억</span>
+      <span>IRP개인납입: ${irpB2}억</span>
     </div>
-    <div class="tt-row" style="margin-bottom:3px;">
+    <div class="tt-row" style="margin-bottom:2px;">
       <span class="tt-dot" style="background:#7F77DD"></span>
       <span style="font-weight:700;">퇴직연금: ${tirp}억</span>
     </div>
@@ -1441,22 +1449,26 @@ function showAssetTooltip(evt, activeEls, chart){
     </div>
   `;
 
-  // ── 위치: 수평만 이동, 수직 고정 (상단 8px) ──
+  // 위치: 해당 인덱스의 x좌표 기준, 수직 상단 고정
   const wrapRect = chart.canvas.parentElement.getBoundingClientRect();
-  const tipW = 190;
-  // 활성 데이터 포인트의 x 픽셀 위치 가져오기
+  const tipW = 185;
   const meta = chart.getDatasetMeta(0);
   const pt   = meta.data[idx];
   let x = pt ? pt.x + 12 : 40;
-  // 오른쪽 넘치면 왼쪽으로 전환 (한 번만, 수직 이동 없음)
-  if(x + tipW > wrapRect.width - 10) x = (pt ? pt.x : 40) - tipW - 12;
+  if(x + tipW > wrapRect.width - 8) x = (pt ? pt.x : 40) - tipW - 12;
   x = Math.max(4, x);
 
   tip.style.left      = x + 'px';
-  tip.style.top       = '8px';      // 수직 항상 고정
+  tip.style.top       = '8px';
   tip.style.display   = 'block';
   tip.style.opacity   = '0.95';
-  tip.style.transition= 'left 0.15s ease, opacity 0.1s ease'; // 수평만 부드럽게
+  tip.style.transition= 'left 0.12s ease';
+}
+
+// onHover 콜백 (Chart.js) — 여전히 사용하지만 가장 가까운 포인트 fallback 처리
+function showAssetTooltip(evt, activeEls, chart){
+  // activeEls가 없어도 mousemove 핸들러가 처리하므로 여기선 저장만
+  if(chart) _assetChartRef = chart;
 }
 
 /* ── 커스텀 차트 툴팁 ── */
@@ -1519,16 +1531,45 @@ function showCustomTooltip(evt, activeEls, chart){
   tip.style.opacity= '0.95';
 }
 
-// 캔버스 밖으로 나가면 툴팁 숨김
+// 자산 잔액 탭: mousemove로 가장 가까운 포인트 자동 감지
 document.addEventListener('mousemove', function(e){
   const canvas = document.getElementById('mainChart');
   const tip    = document.getElementById('chartTooltip');
   if(!canvas||!tip) return;
   const rect = canvas.getBoundingClientRect();
+
+  // 캔버스 밖이면 툴팁 숨김
   if(e.clientX < rect.left || e.clientX > rect.right ||
      e.clientY < rect.top  || e.clientY > rect.bottom){
     tip.style.display='none';
+    return;
   }
+
+  // 자산 잔액 탭에서만 근접 포인트 감지
+  if(chartTab !== 'asset') return;
+  const chart = _assetChartRef;
+  if(!chart || !_chartRows.length) return;
+
+  // 마우스 X 위치 → 가장 가까운 데이터 인덱스 계산
+  const mouseX = e.clientX - rect.left;
+  const meta   = chart.getDatasetMeta(0);
+  if(!meta || !meta.data || !meta.data.length) return;
+
+  let closestIdx = 0;
+  let closestDist = Infinity;
+  meta.data.forEach((pt, i) => {
+    const dist = Math.abs(pt.x - mouseX);
+    if(dist < closestDist){ closestDist = dist; closestIdx = i; }
+  });
+
+  // 차트 영역 내 x 범위를 벗어난 경우 숨김
+  const firstX = meta.data[0]?.x || 0;
+  const lastX  = meta.data[meta.data.length-1]?.x || 0;
+  if(mouseX < firstX - 20 || mouseX > lastX + 20){
+    tip.style.display='none'; return;
+  }
+
+  renderAssetTooltip(closestIdx);
 });
 
 let _chartRows = []; // 툴팁용 전역 rows 캐시
@@ -1580,13 +1621,22 @@ function drawChart(rows){
 
     mainChart=new Chart(ctx,{type:'line',
       data:{labels:rows.map(r=>r.label), datasets:[
-        {label:'연금저축합계',data:rows.map(r=>r.privB), borderColor:C.nh.line, backgroundColor:C.nh.line+'22',fill:true,tension:0.3,pointRadius:2,pointHoverRadius:6,pointHoverBackgroundColor:C.nh.line,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2},
-        {label:'퇴직IRP',    data:rows.map(r=>r.tirpB), borderColor:C.dc.line, backgroundColor:C.dc.line+'22',fill:true,tension:0.3,pointRadius:2,pointHoverRadius:6,pointHoverBackgroundColor:C.dc.line,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2},
-        {label:'ISA',        data:rows.map(r=>r.isaB),  borderColor:C.isa.line,backgroundColor:C.isa.line+'22',fill:true,tension:0.3,pointRadius:2,pointHoverRadius:6,pointHoverBackgroundColor:C.isa.line,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2},
+        {label:'연금저축합계',data:rows.map(r=>r.privB), borderColor:C.nh.line, backgroundColor:C.nh.line+'22',fill:true,tension:0.3,
+          pointRadius:2,pointHoverRadius:5,
+          pointBackgroundColor:C.nh.line,pointBorderColor:'#fff',pointBorderWidth:1,
+          pointHoverBackgroundColor:C.nh.line,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2},
+        {label:'퇴직IRP',    data:rows.map(r=>r.tirpB), borderColor:C.dc.line, backgroundColor:C.dc.line+'22',fill:true,tension:0.3,
+          pointRadius:2,pointHoverRadius:5,
+          pointBackgroundColor:C.dc.line,pointBorderColor:'#fff',pointBorderWidth:1,
+          pointHoverBackgroundColor:C.dc.line,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2},
+        {label:'ISA',        data:rows.map(r=>r.isaB),  borderColor:C.isa.line,backgroundColor:C.isa.line+'22',fill:true,tension:0.3,
+          pointRadius:2,pointHoverRadius:5,
+          pointBackgroundColor:C.isa.line,pointBorderColor:'#fff',pointBorderWidth:1,
+          pointHoverBackgroundColor:C.isa.line,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2,borderWidth:2},
       ]},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:false},tooltip:{enabled:false}},
-        onHover:(evt,els,chart)=>showAssetTooltip(evt,els,chart),
+        // onHover 제거 → mousemove 이벤트에서 가장 가까운 포인트 감지
         scales:{
           x:{ticks:{font:{size:9},maxTicksLimit:10,autoSkip:true},grid:{display:false}},
           y:{ticks:{font:{size:9},callback:v=>v+'억'},grid:{color:'rgba(0,0,0,0.04)'}}
