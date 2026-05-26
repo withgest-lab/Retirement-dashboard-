@@ -1208,11 +1208,11 @@ function autoSuggest(){
   const monLimit = Math.round(p.plimit / 12);
   const gapYrs   = Math.max(1, p.npage - p.ret);
 
-  const nhFV = (function(){ const rm=p.rnh/100/12; let b=p.nh;
-    for(let a=p.age;a<p.ret;a++){ const pay=a>=p.nhstart&&a<=p.nhend?p.nhm:0; for(let m=0;m<12;m++) b=b*(1+rm)+pay; }
+  const nhFV = (function(){ const rm=p.rnh/100/12; const dg=1+rm*(10/30); let b=p.nh;
+    for(let a=p.age;a<p.ret;a++){ const pay=a>=p.nhstart&&a<=p.nhend?p.nhm:0; for(let m=0;m<12;m++) b=b*(1+rm)+pay*dg; }
     return Math.max(0,Math.round(b)); })();
-  const mfFV = (function(){ const rm=p.rmf/100/12; let b=p.mf;
-    for(let a=p.age;a<p.ret;a++){ const pay=a>=p.mfstart&&a<=p.mfend?p.mfm:0; for(let m=0;m<12;m++) b=b*(1+rm)+pay; }
+  const mfFV = (function(){ const rm=p.rmf/100/12; const dg=1+rm*(10/30); let b=p.mf;
+    for(let a=p.age;a<p.ret;a++){ const pay=a>=p.mfstart&&a<=p.mfend?p.mfm:0; for(let m=0;m<12;m++) b=b*(1+rm)+pay*dg; }
     return Math.max(0,Math.round(b)); })();
   // IRP FV (autoSuggest)
   const irpFV = calcISA_FV(p.irp, p.irpy, p.age, Math.max(p.age,p.irpstart), Math.min(p.ret-1,p.irpend), p.ret, p.rirp);
@@ -1595,33 +1595,13 @@ function simulate(p, adj){
     const isaInc  = age>=p.isaage && isaB>0 ? Math.min(p.isam, Math.ceil(isaB/12)) : 0;
     const totalInc= privInc+npInc+tirpInc+isaInc;
 
-    // ── 생활비 잉여/부족 처리 ──
-    // 잉여(totalInc > curExp): 잉여분을 퇴직IRP에 재투자
-    // 부족(totalInc < curExp): 부족분을 퇴직IRP → 농협 순으로 추가 인출
-    const monthlyDiff = totalInc - curExp;
-    let tirpReInvest = 0; // 퇴직IRP 재투자액 (월, 만원)
-    let tirpAddOut  = 0;  // 퇴직IRP 추가 인출액 (월, 만원)
-    let nhAddOut    = 0;  // 농협 추가 인출액 (월, 만원)
-
-    if(monthlyDiff > 0){
-      // 잉여분 → 퇴직IRP 재투자
-      tirpReInvest = monthlyDiff;
-    } else if(monthlyDiff < 0){
-      // 부족분 → 퇴직IRP 추가 인출 (한도 무관)
-      const need = -monthlyDiff;
-      tirpAddOut = tirpB>0 ? Math.min(need, Math.ceil(tirpB/12)) : 0;
-      const stillNeed = need - tirpAddOut;
-      // 그래도 부족 → 농협 추가 인출
-      nhAddOut = nhB>0 ? Math.min(stillNeed, Math.ceil(nhB/12)) : 0;
-    }
-
-    // ── 잔액 업데이트 ──
-    // 퇴직IRP: 인출 후 잉여 재투자 반영 (stepBalance는 인출만 처리하므로 재투자는 별도)
-    nhB   = stepBalance(nhB,   rNh,  nhInc + nhAddOut);
+    // ── 잔액 업데이트 (인출 계획 고정) ──
+    // 생활비는 그래프 목표선(점선)으로만 표시
+    // 실제 자산 시뮬레이션은 설정된 인출 계획 기준으로 고정
+    nhB   = stepBalance(nhB,   rNh,  nhInc);
     mfB   = stepBalance(mfB,   rMf,  mfInc);
     irpB  = stepBalance(irpB,  rIrp, irpInc);
-    tirpB = stepBalance(tirpB, rTirp, tirpInc + tirpAddOut);
-    tirpB += tirpReInvest * 12; // 잉여분 연간 재투자 (stepBalance 후 가산)
+    tirpB = stepBalance(tirpB, rTirp, tirpInc);
     isaB  = stepBalance(isaB,  rIsa, isaInc);
 
     const totalAsset = nhB+mfB+irpB+tirpB+isaB;
@@ -1636,12 +1616,12 @@ function simulate(p, adj){
       nhInc, mfInc, irpInc, privInc,
       npInc, tirpInc, isaInc, totalInc, curExp,
       // 자산 잔액: 만원→억 변환 (소수 1자리)
-      privB: Math.round((nhB+mfB+irpB)/1000)/10,
-      nhB_억: Math.round(nhB/1000)/10,
-      mfB_억: Math.round(mfB/1000)/10,
-      irpB_억: Math.round(irpB/1000)/10,
-      tirpB: Math.round(tirpB/1000)/10,
-      isaB:  Math.round(isaB/1000)/10,
+      privB: Math.round((nhB+mfB+irpB)/10000*10)/10,
+      nhB_억: Math.round(nhB/10000*10)/10,
+      mfB_억: Math.round(mfB/10000*10)/10,
+      irpB_억: Math.round(irpB/10000*10)/10,
+      tirpB: Math.round(tirpB/10000*10)/10,
+      isaB:  Math.round(isaB/10000*10)/10,
     });
   }
 
