@@ -144,8 +144,8 @@ button:disabled{cursor:not-allowed !important;}
   justify-content:center;padding:0;flex-shrink:0;}
 .lock-btn.locked{background:#FFF8E1;border-color:#EF9F27;}
 .lock-btn.unlocked{background:#E1F5EE;border-color:#5DCAA5;}
-/* 슬라이더: 터치영역 확보하되 위아래 여백으로 인접 요소 침범 방지 */
-input[type=range]{
+/* 슬라이더 전체 숨김 */
+input[type=range], .c2-range { display:none !important; }
   width:100%;cursor:pointer;
   height:4px;
   margin:2px 0 6px;
