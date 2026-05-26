@@ -1587,16 +1587,37 @@ function simulate(p, adj){
     const privInc = nhInc+mfInc+irpInc;
 
     const npInc   = age>=p.npage ? p.np : 0;
-    // 퇴직IRP: stepBalance에 실제 인출액 전달 (tirpInc와 일치)
     const tirpInc = age>=p.tage && tirpB>0 ? Math.min(p.tm, Math.ceil(tirpB/12)) : 0;
     const isaInc  = age>=p.isaage && isaB>0 ? Math.min(p.isam, Math.ceil(isaB/12)) : 0;
     const totalInc= privInc+npInc+tirpInc+isaInc;
 
-    // ── 잔액 업데이트 (월 루프 방식, 매월 초 인출 후 복리) ──
-    nhB   = stepBalance(nhB,   rNh,  nhInc);
+    // ── 생활비 잉여/부족 처리 ──
+    // 잉여(totalInc > curExp): 잉여분을 퇴직IRP에 재투자
+    // 부족(totalInc < curExp): 부족분을 퇴직IRP → 농협 순으로 추가 인출
+    const monthlyDiff = totalInc - curExp;
+    let tirpReInvest = 0; // 퇴직IRP 재투자액 (월, 만원)
+    let tirpAddOut  = 0;  // 퇴직IRP 추가 인출액 (월, 만원)
+    let nhAddOut    = 0;  // 농협 추가 인출액 (월, 만원)
+
+    if(monthlyDiff > 0){
+      // 잉여분 → 퇴직IRP 재투자
+      tirpReInvest = monthlyDiff;
+    } else if(monthlyDiff < 0){
+      // 부족분 → 퇴직IRP 추가 인출 (한도 무관)
+      const need = -monthlyDiff;
+      tirpAddOut = tirpB>0 ? Math.min(need, Math.ceil(tirpB/12)) : 0;
+      const stillNeed = need - tirpAddOut;
+      // 그래도 부족 → 농협 추가 인출
+      nhAddOut = nhB>0 ? Math.min(stillNeed, Math.ceil(nhB/12)) : 0;
+    }
+
+    // ── 잔액 업데이트 ──
+    // 퇴직IRP: 인출 후 잉여 재투자 반영 (stepBalance는 인출만 처리하므로 재투자는 별도)
+    nhB   = stepBalance(nhB,   rNh,  nhInc + nhAddOut);
     mfB   = stepBalance(mfB,   rMf,  mfInc);
     irpB  = stepBalance(irpB,  rIrp, irpInc);
-    tirpB = stepBalance(tirpB, rTirp, tirpInc);  // tirpInc로 통일
+    tirpB = stepBalance(tirpB, rTirp, tirpInc + tirpAddOut);
+    tirpB += tirpReInvest * 12; // 잉여분 연간 재투자 (stepBalance 후 가산)
     isaB  = stepBalance(isaB,  rIsa, isaInc);
 
     const totalAsset = nhB+mfB+irpB+tirpB+isaB;
