@@ -1165,8 +1165,12 @@ function calcFV(pv, monthly, years, annualR){
 function stepBalance(bal, annualR, monthlyOut){
   if(bal<=0) return 0;
   const rm = annualR/100/12;
-  const g1 = 1 + rm * (20/30); // 1일~20일 복리 (선형)
-  const g2 = 1 + rm * (10/30); // 21일~말일 복리 (선형)
+  if(monthlyOut<=0){
+    // 인출 없으면 순수 월복리
+    return Math.max(0, bal * Math.pow(1+rm, 12));
+  }
+  const g1 = 1 + rm * (20/30); // 1일~20일
+  const g2 = 1 + rm * (10/30); // 22일~말일
   for(let m=0; m<12; m++){
     bal = bal * g1;
     bal = Math.max(0, bal - monthlyOut) * g2;
@@ -1331,9 +1335,15 @@ function autoSuggest(){
   // IRP가 확정됐으므로 농협은 (한도 - IRP) 만큼만 사용
   const nhMonFull = Math.max(nhMon, Math.min(monLimit - irpMon, monLimit));
 
-  // STEP 6: 퇴직IRP 65세 개시 (한도 무관 → 수명 기준 균등 소진)
+  // STEP 6: 퇴직IRP 65세 개시
+  // 연금현가 공식: PMT = PV × r / (1-(1+r)^-n)
+  // → 복리 효과 반영해서 90세까지 정확히 균등 소진
   const tirpSpan   = Math.max(1, p.life - 65);
-  const tirpMonSug = Math.max(50, Math.round(tirpFV / (tirpSpan * 12)));
+  const tirpRm     = p.rtirp / 100 / 12;
+  const tirpN      = tirpSpan * 12;
+  const tirpMonSug = tirpRm > 0
+    ? Math.round(tirpFV * tirpRm / (1 - Math.pow(1 + tirpRm, -tirpN)))
+    : Math.round(tirpFV / tirpN); // 수익률 0일 때 단순 나눗셈
 
   // 슬라이더 일괄 설정
   sv('mfage',  p.ret);       sv('mfpay',  mfMon);
