@@ -1470,20 +1470,24 @@ function showPlanBanner(d){
     </div>`
   ).join('');
 
-  // 잔여자산 효율화 안내
-  const totalFV90 = res.totalFV; // 은퇴 시점 총자산
-  const lifeYrs   = p.life - p.ret;
-  const optimalMon = totalFV90 > 0 ? Math.round(totalFV90 / (lifeYrs * 12) * 0.8) : 0; // 80% 인출 목표
+  // 잔여자산: 시뮬레이션 마지막 행(90세)의 실제 잔액
+  const lastRow = res.rows[res.rows.length - 1];
+  const asset90 = lastRow
+    ? Math.round((lastRow.privB + lastRow.tirpB + lastRow.isaB) * 10) / 10
+    : 0; // 억 단위
+  
 
   // 인사이트 메시지
   const insights = [];
   if(d.gapOk)  insights.push('✅ 공백기 생활비 목표('+d.target+'만원) 달성 가능합니다.');
-  else         insights.push('⚠️ 공백기 월 '+Math.abs(gapNet)+'만원 부족 — ISA 납입 증액 또는 생활비 조정을 검토하세요.');
+  else         insights.push('⚠️ 공백기 월 '+Math.abs(d.gapShort)+'만원 부족 — ISA 납입 증액 또는 생활비 조정을 검토하세요.');
   if(d.limitOk) insights.push('✅ 사적연금 연 '+d.annualPriv.toLocaleString()+'만원 → 1,500만원 한도 이하, 5.5% 저율 분리과세 적용됩니다.');
   if(!rwOk)    insights.push('⚠️ '+res.runway+'세에 자산 소진 예상 — 생활비 절감 또는 수익률 개선이 필요합니다.');
-  // 90세 잔여자산 과다 안내
-  if(rwOk && res.totalFV > 30000){
-    insights.push('💰 90세 잔여자산이 충분합니다. 퇴직IRP·농협 월 수령액을 높여 생활 수준을 높이거나, 자녀 증여·의료비 예비 자금으로 활용을 검토하세요.');
+  // 90세 실제 잔여자산 기준 안내
+  if(rwOk && asset90 >= 3){
+    insights.push('💰 '+p.life+'세 잔여자산 약 '+asset90+'억 — 퇴직IRP·농협 월 수령액을 높여 생활 수준을 높이거나, 자녀 증여·의료비 예비 자금으로 활용을 검토하세요.');
+  } else if(rwOk && asset90 > 0){
+    insights.push('✅ '+p.life+'세 잔여자산 약 '+asset90+'억 — 생활비 수준과 자산 소진이 적절히 균형을 이루고 있습니다.');
   }
   insights.push('💡 ISA 비과세 인출로 건보료 산정 소득을 낮춰 피부양자 유지(연 2,000만원 이하)를 우선 검토하세요.');
 
