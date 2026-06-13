@@ -978,6 +978,13 @@ const SA={base:{r:0,inf:0}, opt:{r:2,inf:-0.5}, pes:{r:-2,inf:1}};
 
 /* ── 슬라이더 잠금/화살표 제어 ── */
 function toggleLock(id){
+  // 납입시작/종료는 하나의 자물쇠로 페어 제어
+  const PAIR_MAP = {nhstart:'nhend',mfstart:'mfend',irpstart:'irpend',isastart:'isaend'};
+  if(PAIR_MAP[id]){ _toggleLockSingle(id); _toggleLockSingle(PAIR_MAP[id]); return; }
+  _toggleLockSingle(id);
+}
+
+function _toggleLockSingle(id){
   const rng = document.getElementById(id+'-r');
   const btn = document.getElementById('lock-'+id);
   const inp = document.getElementById(id);
@@ -2201,6 +2208,10 @@ function upd(){
 if(!loadState()) upd(); else upd();
 _initLockStates();
 applyInputTags();
+['lock-nhend','lock-mfend','lock-irpend','lock-isaend'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.style.display='none';
+});
 
 /* ── 자동 제안 시 입력 필요도 뱃지 표시 ── */
 function applyInputTags(){
