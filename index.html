@@ -522,6 +522,18 @@ button{font-family:inherit;cursor:pointer;}
     </div>
   </div>
   <input type="range" id="nhpay-r" min="0" max="300" step="5" value="70" class="locked-range" oninput="syncInput('nhpay');upd()">
+</div><div class="irow nh">
+  <div class="irow-top">
+    <span class="ilabel">안세공(비공제)<br>납입원금</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('nhprin',-100)">▼</button>
+      <input class="ival-input" type="number" id="nhprin" value="0" min="0" max="20000" step="100" onblur="onBlurFix('nhprin')" oninput="syncSlider('nhprin');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('nhprin',100)">▲</button>
+      <button class="lock-btn locked" id="lock-nhprin" onclick="toggleLock('nhprin')">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="nhprin-r" min="0" max="20000" step="100" value="0" class="locked-range" oninput="syncInput('nhprin');upd()">
+  <div class="note" style="margin-top:4px;">※ 세액공제 받지 않은 원금. 인출 시 비과세, 1,500만원 한도 미포함</div>
 </div><hr class="div">
 <div class="acct-header" style="background:#C8EDE1;color:#085041;"><span class="dot" style="background:#0F6E56;"></span>연금저축 · 미래에셋</div><div class="irow mf">
   <div class="irow-top">
@@ -594,6 +606,18 @@ button{font-family:inherit;cursor:pointer;}
     </div>
   </div>
   <input type="range" id="mfpay-r" min="0" max="200" step="5" value="46" class="locked-range" oninput="syncInput('mfpay');upd()">
+</div><div class="irow mf">
+  <div class="irow-top">
+    <span class="ilabel">안세공(비공제)<br>납입원금</span>
+    <div class="irow-ctrl">
+      <button class="arr-btn" onclick="stepVal('mfprin',-100)">▼</button>
+      <input class="ival-input" type="number" id="mfprin" value="0" min="0" max="20000" step="100" onblur="onBlurFix('mfprin')" oninput="syncSlider('mfprin');upd()"><span class="unit-tag">만원</span>
+      <button class="arr-btn" onclick="stepVal('mfprin',100)">▲</button>
+      <button class="lock-btn locked" id="lock-mfprin" onclick="toggleLock('mfprin')">🔒</button>
+    </div>
+  </div>
+  <input type="range" id="mfprin-r" min="0" max="20000" step="100" value="0" class="locked-range" oninput="syncInput('mfprin');upd()">
+  <div class="note" style="margin-top:4px;">※ 세액공제 받지 않은 원금. 인출 시 비과세, 1,500만원 한도 미포함</div>
 </div><hr class="div">
 <div class="acct-header" style="background:#E6F1FB;color:#0C447C;"><span class="dot" style="background:#378ADD;"></span>미래에셋 IRP (개인납입)</div><div class="irow irp">
   <div class="irow-top">
@@ -1362,6 +1386,12 @@ function autoSuggest(){
   const gapOk      = gapShort === 0;
   const limitOk    = annualPriv <= p.plimit;
 
+  // 안세공(비공제 납입원금) 비과세 인출 — 1,500만원 한도 미포함, 공백기 균등 소진
+  const nhPrinMon = p.nhprin > 0 ? Math.round(p.nhprin / gapMonths) : 0;
+  const mfPrinMon = p.mfprin > 0 ? Math.round(p.mfprin / gapMonths) : 0;
+  const prinMon   = nhPrinMon + mfPrinMon;
+  const gapTotalWithPrin = gapTotal + prinMon;
+
   // 건보료 피부양자 경고
   // 합산 대상: 국민연금(공적연금)만
   // 합산 제외: 퇴직IRP·연금저축·IRP개인납입(사적연금), ISA(비과세)
@@ -1385,6 +1415,9 @@ function autoSuggest(){
   <li>🥈 미래에셋 <b>${p.ret}세~ 월 ${mfMon}만</b> → 잔액 작은 것 먼저 소진</li>
   <li>🥉 농협 <b>${p.ret}세~ 월 ${nhMon}만</b> → 큰 잔액 장기 분산</li>
   <li>공백기 월 합계 <b>${gapTotal}만원</b> ${gapOk ? '✅ 목표 달성!' : '⚠️ '+gapShort+'만 부족 (자산 한계)'}</li>
+  ${prinMon > 0 ? `<li>💎 안세공(비공제) 비과세 인출 <b>월 ${prinMon}만</b> (농협 ${nhPrinMon}+미래에셋 ${mfPrinMon}) → 1,500만원 한도 미포함, 세금 없음
+    <div style="font-size:8px;color:#888;margin-top:1px;">합산 시 공백기 월 합계 <b>${gapTotalWithPrin}만원</b></div>
+  </li>` : ''}
   <li>공백기 사적연금 연 <b>${(privGap*12).toLocaleString()}만</b> ${privGap*12 <= p.plimit ? '→ 5.5% 분리과세 ✓' : '⚠️ 한도 초과 → 16.5% 분리과세 또는 종합과세'}</li>
 </ul>
 <div style="margin:5px 0 3px;font-size:9px;font-weight:700;">▸ 완성기 (${p.npage}세~)</div>
@@ -1406,7 +1439,8 @@ ${healthWarn ? `<div style="background:#FEF3C7;border-radius:5px;padding:5px 8px
     gapTotal, fullTotal, annualPriv, limitOk,
     isaFinal, mfMon, nhMon, nhMonFull, irpMon, tirpMonSug, irpStartAge,
     gapShort, gapOk, target:p.exp,
-    npage:p.npage, ret:p.ret, tage:65
+    npage:p.npage, ret:p.ret, tage:65,
+    prinMon, nhPrinMon, mfPrinMon, gapTotalWithPrin
   });
   upd();
 }
@@ -1422,12 +1456,14 @@ function showPlanBanner(d){
   const res = simulate(p, {r:0,inf:0});
 
   // 카드값
-  const gapNet  = d.gapTotal - d.target;
-  const fullNet = d.fullTotal - d.target;
-  document.getElementById('pb-gap-total').textContent  = d.gapTotal+'만원/월';
+  document.getElementById('pb-gap-total').textContent  = d.gapTotal+'만원/월'
+    + (d.prinMon>0 ? ' (+안세공 '+d.prinMon+'만)' : '');
+  const gapNet  = d.gapTotalWithPrin - d.target;
   document.getElementById('pb-gap-vs').textContent     =
     (gapNet>=0 ? '✅ 생활비 대비 +'+gapNet+'만 여유' : '⚠️ 생활비 대비 '+gapNet+'만 부족');
   document.getElementById('pb-gap-vs').style.color     = gapNet>=0?'#4ADE80':'#FC8181';
+
+  const fullNet = d.fullTotal - d.target;
 
   document.getElementById('pb-full-total').textContent = d.fullTotal+'만원/월';
   document.getElementById('pb-full-vs').textContent    =
@@ -1721,8 +1757,8 @@ function resetState(){
 function getP(){
   return{
     age:gv('age'),ret:gv('ret'),life:gv('life'),exp:gv('exp'),
-    nh:gv('nh'),nhm:gv('nhm'),nhstart:gv('nhstart'),nhend:gv('nhend'),nhage:gv('nhage'),nhpay:gv('nhpay'),
-    mf:gv('mf'),mfm:gv('mfm'),mfstart:gv('mfstart'),mfend:gv('mfend'),mfage:gv('mfage'),mfpay:gv('mfpay'),
+    nh:gv('nh'),nhm:gv('nhm'),nhstart:gv('nhstart'),nhend:gv('nhend'),nhage:gv('nhage'),nhpay:gv('nhpay'),nhprin:gv('nhprin'),
+    mf:gv('mf'),mfm:gv('mfm'),mfstart:gv('mfstart'),mfend:gv('mfend'),mfage:gv('mfage'),mfpay:gv('mfpay'),mfprin:gv('mfprin'),
     irp:gv('irp'),irpy:gv('irpy'),irpstart:gv('irpstart'),irpend:gv('irpend'),irpage:gv('irpage'),irppay:gv('irppay'),
     tirp:gv('tirp'),tage:gv('tage'),tm:gv('tm'),
     np:gv('np'),npage:gv('npage'),
