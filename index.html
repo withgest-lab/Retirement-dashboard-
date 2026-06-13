@@ -121,6 +121,16 @@ h1{font-size:15px;font-weight:700;color:#111;}
 }
 .irow-ctrl{display:flex;align-items:center;gap:2px;flex-shrink:0;justify-content:flex-end;}
 
+/* ── 입력 필요도 뱃지 ── */
+.itag{font-size:7px;font-weight:700;padding:1px 4px;border-radius:4px;
+  display:inline-block;margin-top:2px;letter-spacing:0.3px;}
+.itag-req{background:#FEF3C7;color:#92400E;}
+.itag-auto{background:#E5E7EB;color:#6B7280;}
+.itag-opt{background:#DBEAFE;color:#1E40AF;}
+.irow.tag-auto{opacity:0.55;}
+.irow.tag-auto .ival-input{background:#F3F4F6;}
+.irow.tag-opt{background:rgba(96,165,250,0.06);border-radius:6px;}
+
 /* ── 숫자 입력 ── */
 .ival-input{font-size:11px;font-weight:700;padding:2px 3px;border-radius:5px;
   width:60px;text-align:center;border-width:1.5px;border-style:solid;
@@ -2164,6 +2174,38 @@ function upd(){
 
 if(!loadState()) upd(); else upd();
 _initLockStates();
+applyInputTags();
+
+/* ── 자동 제안 시 입력 필요도 뱃지 표시 ── */
+function applyInputTags(){
+  const REQ  = ['age','ret','life','exp','plimit',
+    'nh','nhm','nhstart','nhend','nhprin',
+    'mf','mfm','mfstart','mfend','mfprin',
+    'irp','irpy','irpstart','irpend',
+    'tirp','np','npage','isa','isay','isastart','isaend'];
+  const AUTO = ['nhage','nhpay','mfage','mfpay','irpage','irppay','isaage','isam','tage','tm'];
+  const OPT  = ['rnh','rmf','rirp','rtirp','risa','inf'];
+
+  function tag(id, cls, text){
+    const el = document.getElementById(id);
+    if(!el) return;
+    const row = el.closest('.irow');
+    if(!row) return;
+    row.classList.add(cls);
+    const label = row.querySelector('.ilabel');
+    if(label && !label.querySelector('.itag')){
+      const b = document.createElement('span');
+      b.className = 'itag itag-'+cls.replace('tag-','');
+      b.textContent = text;
+      label.appendChild(document.createElement('br'));
+      label.appendChild(b);
+    }
+  }
+  REQ.forEach(id=>tag(id,'tag-req','필수'));
+  AUTO.forEach(id=>tag(id,'tag-auto','자동'));
+  OPT.forEach(id=>tag(id,'tag-opt','선택'));
+}
+
 </script>
 </body>
 </html>
