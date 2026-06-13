@@ -206,6 +206,7 @@ input[type=range]:hover::-moz-range-thumb{background:#555;}
 .irow-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px;
   margin-bottom:8px;padding-right:2px;}
 .c2-item{display:flex;flex-direction:column;gap:2px;}
+.c2-item.tag-req{border-left:4px solid #F59E0B;padding-left:6px;}
 .c2-label{font-size:9px;color:#888;font-weight:600;margin-bottom:1px;}
 /* c2-ctrl: irow-ctrl과 동일하게 flex-end 정렬 → 잠금버튼 수직 일치 */
 .c2-ctrl{display:flex;align-items:center;gap:2px;justify-content:flex-end;}
@@ -959,6 +960,7 @@ const C={
   dc:  {fill:'rgba(127,119,221,0.85)',line:'#7F77DD'},
   np:  {fill:'rgba(239,159,39,0.88)', line:'#EF9F27'},
   isa: {fill:'rgba(136,135,128,0.75)',line:'#888780'},
+  prin:{fill:'rgba(244,194,75,0.85)', line:'#D4A017'},
   exp: {line:'#D85A30'},
 };
 
@@ -1606,6 +1608,13 @@ function simulate(p, adj){
 
   const privLimMon = Math.round(p.plimit/12);
 
+  // 안세공(비공제) 비과세 인출: 공백기(은퇴~국민연금 수령전) 균등 소진
+  const gapYrsSim = Math.max(1, p.npage - p.ret);
+  const gapMonSim = gapYrsSim * 12;
+  const nhPrinMonSim = (p.nhprin||0) > 0 ? Math.round(p.nhprin / gapMonSim) : 0;
+  const mfPrinMonSim = (p.mfprin||0) > 0 ? Math.round(p.mfprin / gapMonSim) : 0;
+  let nhPrinB = p.nhprin||0, mfPrinB = p.mfprin||0;
+
   // 생활비: 현재 나이 기준 → 은퇴 시점까지 물가 반영한 값을 기준으로 이후 추가 적용
   // (p.exp는 현재 기준 생활비이므로, 은퇴까지 yrs년치 물가 먼저 반영)
   const expAtRet = Math.round(p.exp * Math.pow(1 + infR/100, yrs));
@@ -1651,7 +1660,18 @@ function simulate(p, adj){
     const npInc   = age>=p.npage ? p.np : 0;
     const tirpInc = age>=p.tage && tirpB>0 ? Math.min(p.tm, Math.ceil(tirpB/12)) : 0;
     const isaInc  = age>=p.isaage && isaB>0 ? Math.min(p.isam, Math.ceil(isaB/12)) : 0;
-    const totalInc= privInc+npInc+tirpInc+isaInc;
+
+    // 안세공(비공제) 비과세 인출 — 공백기에만, 1,500만원 한도 미포함
+    let prinInc = 0;
+    if(age < p.npage){
+      const nhP = Math.min(nhPrinMonSim, Math.ceil(nhPrinB/12));
+      const mfP = Math.min(mfPrinMonSim, Math.ceil(mfPrinB/12));
+      prinInc = nhP + mfP;
+      nhPrinB = Math.max(0, nhPrinB - nhP*12);
+      mfPrinB = Math.max(0, mfPrinB - mfP*12);
+    }
+
+    const totalInc= privInc+npInc+tirpInc+isaInc+prinInc;
 
     // ── 잔액 업데이트 (인출 계획 고정) ──
     // 생활비는 그래프 목표선(점선)으로만 표시
@@ -1672,7 +1692,7 @@ function simulate(p, adj){
     rows.push({
       age, label:age+'세',
       nhInc, mfInc, irpInc, privInc,
-      npInc, tirpInc, isaInc, totalInc, curExp,
+      npInc, tirpInc, isaInc, prinInc, totalInc, curExp,
       // 자산 잔액: 만원→억 변환 (소수 1자리)
       privB: Math.round((nhB+mfB+irpB)/10000*10)/10,
       nhB_억: Math.round(nhB/10000*10)/10,
@@ -1859,7 +1879,7 @@ function showAssetTooltip(evt, activeEls, chart){
 const C_MAP = {
   '농협연금저축': '#1D9E75', '미래에셋연금저축': '#0F6E56',
   'IRP(개인납입)': '#378ADD', '국민연금': '#EF9F27',
-  '퇴직IRP': '#7F77DD', 'ISA인출': '#888780',
+  '퇴직IRP': '#7F77DD', 'ISA인출': '#888780', '안세공 비과세인출': '#D4A017',
 };
 
 function showCustomTooltip(evt, activeEls, chart){
@@ -1886,6 +1906,7 @@ function showCustomTooltip(evt, activeEls, chart){
     {label:'국민연금', val:row.npInc, dot:'#EF9F27'},
     {label:'퇴직IRP', val:row.tirpInc, dot:'#7F77DD'},
     {label:'ISA인출', val:row.isaInc, dot:'#888780'},
+    {label:'안세공 비과세인출', val:row.prinInc, dot:'#D4A017'},
   ];
   items.forEach(it=>{
     if((it.val||0)>0){
@@ -1973,17 +1994,19 @@ function drawChart(rows){
       {c:C.np.fill, l:'국민연금'},
       {c:C.dc.fill, l:'퇴직IRP'},
       {c:C.isa.fill,l:'ISA인출'},
+      {c:C.prin.fill,l:'안세공 비과세인출'},
       {c:C.exp.line,l:'생활비예측(선)',dashed:true},
     ].map(x=>`<span class="leg-item"><span class="leg-swatch" style="${x.dashed?'background:transparent;border:2px dashed '+x.c+';':'background:'+x.c+';'}"></span>${x.l}</span>`).join('');
 
     mainChart=new Chart(ctx,{type:'bar',
       data:{labels:rows.map(r=>r.label), datasets:[
-        {label:'농협연금저축',    data:rows.map(r=>r.nhInc),   backgroundColor:C.nh.fill, stack:'s'},
-        {label:'미래에셋연금저축',data:rows.map(r=>r.mfInc),   backgroundColor:C.mf.fill, stack:'s'},
+        {label:'농협연금저축(세공)',    data:rows.map(r=>r.nhInc),   backgroundColor:C.nh.fill, stack:'s'},
+        {label:'미래에셋연금저축(세공)',data:rows.map(r=>r.mfInc),   backgroundColor:C.mf.fill, stack:'s'},
         {label:'IRP(개인납입)',   data:rows.map(r=>r.irpInc),  backgroundColor:C.irp.fill,stack:'s'},
         {label:'국민연금',         data:rows.map(r=>r.npInc),   backgroundColor:C.np.fill, stack:'s'},
         {label:'퇴직IRP',          data:rows.map(r=>r.tirpInc), backgroundColor:C.dc.fill, stack:'s'},
         {label:'ISA인출',          data:rows.map(r=>r.isaInc),  backgroundColor:C.isa.fill,stack:'s'},
+        {label:'안세공 비과세인출', data:rows.map(r=>r.prinInc), backgroundColor:C.prin.fill,stack:'s'},
         {label:'생활비예측(선)',           data:rows.map(r=>r.curExp),
           type:'line',borderColor:C.exp.line,borderWidth:2.5,borderDash:[5,3],
           pointRadius:3,pointHoverRadius:6,pointBackgroundColor:C.exp.line,
@@ -2142,8 +2165,9 @@ function upd(){
     ]},
     {ph:'공백기',c:'#E65100',bg:'#FFF3E0',items:[
       {dot:C.isa.line,t:'ISA 월 '+Math.round(gR.isaInc||0)+'만 ('+p.isaage+'세~) 🥇비과세'},
-      {dot:C.mf.line, t:'미래에셋 월 '+Math.round(gR.mfInc||0)+'만 ('+p.mfage+'세~) 🥈'},
-      {dot:C.nh.line, t:'농협 월 '+Math.round(gR.nhInc||0)+'만 ('+p.nhage+'세~) 🥉'},
+      {dot:C.mf.line, t:'미래에셋(세공) 월 '+Math.round(gR.mfInc||0)+'만 ('+p.mfage+'세~) 🥈'},
+      {dot:C.nh.line, t:'농협(세공) 월 '+Math.round(gR.nhInc||0)+'만 ('+p.nhage+'세~) 🥉'},
+      {dot:C.prin.line,t:'안세공(비공제) 월 '+Math.round(gR.prinInc||0)+'만 — 비과세·한도 미포함 💎'},
       {dot:C.irp.line,t:'IRP 월 '+Math.round(gR.irpInc||0)+'만 ('+p.irpage+'세~)'},
       {dot:C.dc.line, t:'퇴직IRP 계속 운용 → '+p.tage+'세 개시'},
     ]},
@@ -2191,7 +2215,7 @@ function applyInputTags(){
   function tag(id, cls){
     const el = document.getElementById(id);
     if(!el) return;
-    const row = el.closest('.irow');
+    const row = el.closest('.irow') || el.closest('.c2-item');
     if(!row) return;
     row.classList.add(cls);
   }
