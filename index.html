@@ -121,15 +121,17 @@ h1{font-size:15px;font-weight:700;color:#111;}
 }
 .irow-ctrl{display:flex;align-items:center;gap:2px;flex-shrink:0;justify-content:flex-end;}
 
-/* ── 입력 필요도 뱃지 ── */
-.itag{font-size:7px;font-weight:700;padding:1px 4px;border-radius:4px;
-  display:inline-block;margin-top:2px;letter-spacing:0.3px;}
-.itag-req{background:#FEF3C7;color:#92400E;}
-.itag-auto{background:#E5E7EB;color:#6B7280;}
-.itag-opt{background:#DBEAFE;color:#1E40AF;}
-.irow.tag-auto{opacity:0.55;}
-.irow.tag-auto .ival-input{background:#F3F4F6;}
-.irow.tag-opt{background:rgba(96,165,250,0.06);border-radius:6px;}
+/* ── 입력 필요도 표시: 좌측 색띠 ── */
+.irow.tag-req{border-left:4px solid #F59E0B;padding-left:6px;}
+.irow.tag-auto{border-left:4px dashed #9CA3AF;padding-left:6px;opacity:0.45;}
+.irow.tag-auto .ival-input,.irow.tag-auto input[type=number]{background:#F3F4F6;}
+.irow.tag-opt{border-left:4px solid #60A5FA;padding-left:6px;background:rgba(96,165,250,0.06);}
+
+/* ── 범례 ── */
+.itag-legend{display:flex;gap:10px;flex-wrap:wrap;font-size:8.5px;color:#666;
+  padding:5px 8px;margin-bottom:6px;background:#F9FAFB;border-radius:6px;}
+.itag-legend span{display:flex;align-items:center;gap:3px;}
+.itag-legend .sw{width:10px;height:10px;border-radius:2px;display:inline-block;}
 
 /* ── 숫자 입력 ── */
 .ival-input{font-size:11px;font-weight:700;padding:2px 3px;border-radius:5px;
@@ -2186,24 +2188,28 @@ function applyInputTags(){
   const AUTO = ['nhage','nhpay','mfage','mfpay','irpage','irppay','isaage','isam','tage','tm'];
   const OPT  = ['rnh','rmf','rirp','rtirp','risa','inf'];
 
-  function tag(id, cls, text){
+  function tag(id, cls){
     const el = document.getElementById(id);
     if(!el) return;
     const row = el.closest('.irow');
     if(!row) return;
     row.classList.add(cls);
-    const label = row.querySelector('.ilabel');
-    if(label && !label.querySelector('.itag')){
-      const b = document.createElement('span');
-      b.className = 'itag itag-'+cls.replace('tag-','');
-      b.textContent = text;
-      label.appendChild(document.createElement('br'));
-      label.appendChild(b);
-    }
   }
-  REQ.forEach(id=>tag(id,'tag-req','필수'));
-  AUTO.forEach(id=>tag(id,'tag-auto','자동'));
-  OPT.forEach(id=>tag(id,'tag-opt','선택'));
+  REQ.forEach(id=>tag(id,'tag-req'));
+  AUTO.forEach(id=>tag(id,'tag-auto'));
+  OPT.forEach(id=>tag(id,'tag-opt'));
+
+  // 범례를 패널 ① 최상단에 삽입
+  const panel1 = document.querySelector('.panel-title');
+  if(panel1 && !document.querySelector('.itag-legend')){
+    const legend = document.createElement('div');
+    legend.className = 'itag-legend';
+    legend.innerHTML =
+      '<span><i class="sw" style="background:#F59E0B"></i>필수입력</span>'+
+      '<span><i class="sw" style="background:#9CA3AF;border:1px dashed #9CA3AF"></i>자동계산(제안 후 채워짐)</span>'+
+      '<span><i class="sw" style="background:#60A5FA"></i>선택(기본값 OK)</span>';
+    panel1.insertAdjacentElement('afterend', legend);
+  }
 }
 
 </script>
