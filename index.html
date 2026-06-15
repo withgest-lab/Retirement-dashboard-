@@ -1661,7 +1661,7 @@ function simulate(p, adj){
     // 농협: 물가증액 PMT(57~기대수명) 기반 인출 — 한도 흡수 로직 제거
     // (한도 여유분을 흡수하면 PMT 산정의 전제(life세 소진)가 깨지므로,
     //  사적연금 한도 여유분은 IRP개인납입이 우선 활용하도록 함)
-    const nhInc = (age>=p.nhage && nhB>0) ? Math.min(Math.round(p.nhpay*infMul), Math.ceil(nhB/12)) : 0;
+    let nhInc = (age>=p.nhage && nhB>0) ? Math.min(Math.round(p.nhpay*infMul), Math.ceil(nhB/12)) : 0;
 
     // 사적연금 합산 한도 초과 시 비례 조정
     const pSum = nhInc+mfInc+irpInc;
@@ -1737,8 +1737,8 @@ const STORAGE_KEY = 'retirement_dashboard_v1';
 // 저장할 모든 필드 ID 목록
 const ALL_FIELDS = [
   'age','ret','life','exp','plimit',
-  'nh','nhm','nhstart','nhend','nhage','nhpay',
-  'mf','mfm','mfstart','mfend','mfage','mfpay',
+  'nh','nhm','nhstart','nhend','nhage','nhpay','nhprin',
+  'mf','mfm','mfstart','mfend','mfage','mfpay','mfprin',
   'irp','irpy','irpstart','irpend','irpage','irppay',
   'tirp','tage','tm',
   'np','npage',
@@ -2127,15 +2127,17 @@ function upd(){
     el.textContent = startAge+'세~'+endAge+'세 매년 '+p.isay.toLocaleString()+'만 납입 ('+payYrs+'년, 총 '+totalPay.toLocaleString()+'만) → '+p.ret+'세 시 예상 잔액 약 '+fmtW(bal)+'원';
   })();
 
-  // 한도 게이지
-  const totalPrivMon=p.nhpay+p.mfpay+p.irppay;
+  // 한도 게이지 — 공백기(농협+미래에셋) 기준. IRP개인납입은 완성기에 개시되어
+  // 공백기와 시점이 겹치지 않으므로 별도 표시(완성기 한도는 농협+IRP로 재계산됨)
+  const totalPrivMon=p.nhpay+p.mfpay;
+  const fullPrivMon=p.nhpay+p.irppay;
   const monLimit=Math.round(p.plimit/12);
   const pct2=Math.min(100, Math.round(totalPrivMon/monLimit*100));
   const fill=document.getElementById('gauge-fill');
   fill.style.width=pct2+'%';
   fill.style.background=pct2>=100?'#D85A30':pct2>=85?'#EF9F27':'#1D9E75';
   document.getElementById('gauge-text').textContent=
-    '월 '+totalPrivMon+'만 / '+monLimit+'만원 ('+pct2+'%)';
+    '공백기 월 '+totalPrivMon+'만 · 완성기 월 '+fullPrivMon+'만 / 한도 '+monLimit+'만원 ('+pct2+'%)';
 
   // 시뮬레이션
   const res=simulate(p, SA[sc]);
