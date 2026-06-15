@@ -460,8 +460,7 @@ button{font-family:inherit;cursor:pointer;}
     </div>
   </div>
   <input type="range" id="plimit-r" min="900" max="1500" step="50" value="1500" class="locked-range" oninput="syncInput('plimit');upd()">
-</div><button class="suggest-btn" onclick="autoSuggest()">✨ 세금·건보료 최소화 플랜 자동 제안</button>
-<button class="suggest-btn" style="background:linear-gradient(135deg,#D85A30,#E65100);" onclick="fitTo90()">🎯 90세 소진 맞춤 (인출액 자동 재계산)</button>
+</div><button class="suggest-btn" style="background:linear-gradient(135deg,#1D9E75,#D85A30);" onclick="autoSuggest()">🎯 세금·건보료 최소화 + 기대수명 맞춤 자동설계</button>
 <div class="suggest-result" id="suggest-box"></div>
 <div class="suggest-result" id="fit90-box"></div>
 </div>
@@ -1203,6 +1202,22 @@ function calcFV(pv, monthly, years, annualR){
   return Math.max(0, Math.round(pv*grow + monthly*(grow-1)/rm));
 }
 
+/* ── 물가상승 반영 연금(Growing Annuity) PMT ──
+   매월 인출액이 물가상승률(g)만큼 매년 증가하는 구조에서,
+   첫 회(1개월차) 인출액(오늘 기준 실질 금액)을 구하는 공식.
+   n개월 동안 인출 시 잔액(pv)이 정확히 0이 되도록 함.
+   r: 월 명목수익률, g: 월 물가상승률
+   - r ≠ g: PMT1 = pv * (r-g) / (1 - ((1+g)/(1+r))^n)
+   - r == g: PMT1 = pv / n  (실질수익률 0 → 단순 분할)
+*/
+function pmtGrowing(pv, annualR, annualInf, n){
+  if(n<=0 || pv<=0) return 0;
+  const r = annualR/100/12, g = annualInf/100/12;
+  if(Math.abs(r-g) < 1e-9) return pv/n;
+  const ratio = (1+g)/(1+r);
+  return pv * (r-g) / (1 - Math.pow(ratio, n));
+}
+
 /* ── 은퇴 후 잔액 시뮬레이션 (매월 21일 수령 기준) ──
    매월 21일 수령:
    - 1일~20일: 잔액 전체 복리 (20/30개월)
@@ -1254,7 +1269,7 @@ function limitCheck(changed){
   upd();
 }
 
-/* ── 자동 최적 플랜 (생활비 목표 충족 우선) ── */
+/* ── 자동 최적 플랜 (세금·건보료 최소화 + 기대수명까지 자산 최대 활용) ── */
 function autoSuggest(){
   const p   = getP();
   const yrs = Math.max(0, p.ret - p.age);
@@ -1281,44 +1296,45 @@ function autoSuggest(){
     p.risa, 'isa'  // ISA: 3년 만기 독립 회차
   );
 
-  const target = p.exp; // 공백기 월 생활비 목표
-  let remaining = target;
+  const target = p.exp; // 생활비 — 참고용 비교 지표 (인출액을 제한하지 않음)
+  const infR = p.inf; // 물가상승률(연%)
 
-  // ── ISA 3년 만기 구조 반영 ──
-  // 납입기간(isastart~isaend) 동안 연 2,000만씩 납입 → 3년 단위 만기 해지 반복
-  // 은퇴 시점(p.ret)에 남은 전체 잔액 = isaFV
-  // 비과세 한도: 일반형 200만, 서민형 400만 (초과분 9.9% 분리과세)
-  // 수령 방식: 공백기(p.ret~p.npage) 동안 균등 소진 (비과세이므로 최대한 먼저 인출)
-  const gapMonths = gapYrs * 12;
-  // 캡 없이 공백기 기간 동안 균등 소진 (300만 캡 제거)
-  const isaMaxMon = isaFV > 0 ? Math.round(isaFV / gapMonths) : 0;
-  const isaMonSug = Math.min(isaMaxMon, remaining); // 목표 이상 인출 안 함
-  remaining = Math.max(0, remaining - isaMonSug);
-
-
-  // STEP 2: 미래에셋 연금저축 (2순위 - 잔액 小 먼저)
-  // 하드캡 제거 → 실제 잔액 기반 공백기 균등 소진, 사적연금 한도 내
-  const mfMaxMon = mfFV > 0 ? Math.round(mfFV / (gapYrs * 12)) : 0;
-  const mfMon    = Math.min(mfMaxMon, remaining, monLimit);
-  remaining = Math.max(0, remaining - mfMon);
-
-  // STEP 3: 농협 연금저축 (3순위 - 잔액 大, 장기 분산)
-  // 공백기: 사적연금 한도 내 (미래에셋과 합산)
-  // 완성기(미래에셋 소진 후): 한도 전체를 농협이 사용 가능
-  const nhSpan    = Math.max(1, p.life - p.ret);
-  const nhMaxMon  = nhFV > 0 ? Math.round(nhFV / (nhSpan * 12)) : 0;
-  // 공백기 농협 월 인출: 한도에서 미래에셋 차감
-  const nhMon     = Math.min(nhMaxMon, Math.max(0, monLimit - mfMon));
-  // 미래에셋 소진 후 농협 증액 가능액
-
-  // STEP 4: 목표 미달 시 ISA 추가 인출로 보완 (공백기 내 전액 소진 허용)
-  let isaFinal = isaMonSug;
-  if(remaining > 0 && isaMaxMon > isaMonSug){
-    const extra = Math.min(remaining, isaMaxMon - isaMonSug);
-    isaFinal += extra;
-    remaining = Math.max(0, remaining - extra);
+  // 명목 FV → "오늘(p.age세) 기준 실질 금액"으로 환산한 첫회 월 인출액 산출
+  // 1) pmtGrowing: 인출시작시점 기준 첫달 인출액(명목) 계산 (잔액이 endAge에 정확히 0)
+  // 2) (1+infR)^(startAge-p.age)로 나눠 "오늘 기준" 값으로 역환산
+  //    → simulate()에서 infMul=(1+infR)^(age-p.age)을 곱하면 매년 물가만큼 증액되어 일관성 유지
+  function pmtTodayValue(fv, ratePct, startAge, endAge){
+    const n = (endAge - startAge + 1) * 12;
+    const pmtFirst = pmtGrowing(fv, ratePct, infR, n); // startAge 시점 명목 첫달 인출액
+    const back = Math.pow(1+infR/100, startAge - p.age);
+    return back > 0 ? pmtFirst / back : pmtFirst;
   }
 
+  // ── 인출 순서: ① ISA → ② 안세공(비공제) → ③ 미래에셋 → ④ 농협 ──
+  // 모두 "기대수명(p.life)까지 자산을 최대한 소진"하는 방향으로 산정.
+  // 한도(사적연금)·세제상 우선순위가 높은 항목부터 최대치로 책정.
+  // 인출액은 매년 물가상승률만큼 증액되는 구조(Growing Annuity)이며,
+  // 슬라이더 값은 "오늘(p.age세) 기준 실질 금액"으로 표기됨.
+
+  // ① ISA 3년 만기 구조 반영 — 공백기(p.ret~p.npage) 동안 물가증액 소진 (최대치)
+  const isaFinal = isaFV > 0 ? Math.round(pmtTodayValue(isaFV, p.risa, p.ret, p.npage-1)) : 0;
+
+  // ② 안세공(비공제 납입원금) — 1,500만원 한도 미포함, 공백기 균등 소진 (명목 고정, 한도 자체가 명목값)
+  const nhPrinMon = p.nhprin > 0 ? Math.round(p.nhprin / (gapYrs*12)) : 0;
+  const mfPrinMon = p.mfprin > 0 ? Math.round(p.mfprin / (gapYrs*12)) : 0;
+  const prinMon   = nhPrinMon + mfPrinMon;
+
+  // ③ 미래에셋 연금저축 — 공백기 동안 물가증액 소진 (사적연금 한도 내, 최대치)
+  const mfMaxMon = mfFV > 0 ? Math.round(pmtTodayValue(mfFV, p.rmf, p.ret, p.npage-1)) : 0;
+  const mfMon    = Math.min(mfMaxMon, monLimit);
+
+  // ④ 농협 연금저축 — 공백기: 한도에서 미래에셋 차감분만 인출 가능 (사적연금 한도 제약)
+  // PMT(57~기대수명) 이론치(nhMaxMon)를 한도 잔여분(nhGapMon)이 충족 못 하면,
+  // 한도 제약으로 인해 기대수명까지 완전 소진이 어려움 → 잔여자산으로 안내
+  const nhMaxMon = nhFV > 0 ? Math.round(pmtTodayValue(nhFV, p.rnh, p.ret, p.life)) : 0;
+  const nhGapMon = Math.max(0, monLimit - mfMon);
+  const nhMon    = Math.min(nhMaxMon, nhGapMon);
+  const nhLimited = nhMaxMon > nhGapMon; // 한도 제약으로 PMT 이론치보다 적게 받는 상태
 
   // ── ISA 전 회차 비과세·세금 정보 계산 (안내용) ──
   const ISA_EXEMPT_PER_CYCLE = 200;
@@ -1366,33 +1382,17 @@ function autoSuggest(){
   const isaPayYrs = Math.max(0, Math.min(p.ret - 1, p.isaend) - Math.max(p.age, p.isastart) + 1);
   const isaTotalPay = isaPayYrs * p.isay;
 
-  // STEP 5: IRP 개인납입 시작나이 → 미래에셋 연금저축 소진 시점 자동 연동
-  let irpStartAge;
-  if(mfMon > 0 && mfFV > 0){
-    const mfDepletionYrs = mfFV / (mfMon * 12);
-    irpStartAge = Math.round(p.ret + mfDepletionYrs);
-  } else {
-    irpStartAge = p.ret;
-  }
-  irpStartAge = Math.max(65, Math.min(irpStartAge, p.life - 5));
-  const irpSpan   = Math.max(1, p.life - irpStartAge);
-  const irpMaxMon = irpFV > 0 ? Math.round(irpFV / (irpSpan * 12)) : 0;
-  // IRP 개시 시점 한도: 농협(nhMon)만 수령 중 → monLimit - nhMon
+  // STEP 5: IRP 개인납입 시작나이 = 미래에셋 연금저축 소진 시점(국민연금 개시=p.npage)
+  // mfMon은 pmtTodayValue로 p.npage-1세에 정확히 소진되도록 산정되었으므로 그대로 연동
+  const irpStartAge = Math.min(p.npage, p.life - 1);
+  const irpMaxMon = irpFV > 0 ? Math.round(pmtTodayValue(irpFV, p.rirp, irpStartAge, p.life)) : 0;
+  // IRP 개시 시점 한도: 농협(nhMon, 전 구간 동일)만 수령 중 → monLimit - nhMon
   const irpMon = Math.min(irpMaxMon, Math.max(0, monLimit - nhMon));
 
-  // nhMonFull 재조정: 완성기 농협 + IRP ≤ 사적연금 한도(125만)
-  // IRP가 확정됐으므로 농협은 (한도 - IRP) 만큼만 사용
-  const nhMonFull = Math.max(nhMon, Math.min(monLimit - irpMon, monLimit));
-
   // STEP 6: 퇴직IRP 65세 개시
-  // 연금현가 공식: PMT = PV × r / (1-(1+r)^-n)
-  // → 복리 효과 반영해서 90세까지 정확히 균등 소진
-  const tirpSpan   = Math.max(1, p.life - 65);
-  const tirpRm     = p.rtirp / 100 / 12;
-  const tirpN      = tirpSpan * 12;
-  const tirpMonSug = tirpRm > 0
-    ? Math.round(tirpFV * tirpRm / (1 - Math.pow(1 + tirpRm, -tirpN)))
-    : Math.round(tirpFV / tirpN); // 수익률 0일 때 단순 나눗셈
+  // 물가상승 반영 연금(Growing Annuity) 공식 → p.life세에 정확히 소진,
+  // 매년 물가만큼 인출액이 증가하는 실질가치 유지형 인출
+  const tirpMonSug = tirpFV > 0 ? Math.round(pmtTodayValue(tirpFV, p.rtirp, 65, p.life)) : 0;
 
   // 슬라이더 일괄 설정
   sv('mfage',  p.ret);       sv('mfpay',  mfMon);
@@ -1403,19 +1403,23 @@ function autoSuggest(){
 
   // 사적연금 한도 체크: 공백기/완성기 각각
   const privGap  = mfMon + nhMon;
-  const privFull = nhMonFull + irpMon;  // 완성기: 미래에셋 소진 → 농협 증액
+  const privFull = nhMon + irpMon;  // 완성기: 미래에셋 소진 → IRP개인납입 개시
   const annualPriv = Math.max(privGap, privFull) * 12;
   const gapTotal   = mfMon + nhMon + isaFinal;
-  const fullTotal  = nhMonFull + irpMon + p.np + tirpMonSug;
-  const gapShort   = Math.max(0, target - gapTotal);
-  const gapOk      = gapShort === 0;
+  const fullTotal  = nhMon + irpMon + p.np + tirpMonSug;
   const limitOk    = annualPriv <= p.plimit;
 
-  // 안세공(비공제 납입원금) 비과세 인출 — 1,500만원 한도 미포함, 공백기 균등 소진
-  const nhPrinMon = p.nhprin > 0 ? Math.round(p.nhprin / gapMonths) : 0;
-  const mfPrinMon = p.mfprin > 0 ? Math.round(p.mfprin / gapMonths) : 0;
-  const prinMon   = nhPrinMon + mfPrinMon;
   const gapTotalWithPrin = gapTotal + prinMon;
+
+  // 생활비(p.exp) 대비 비교 — 참고용 (인출액을 제한하지 않음)
+  const gapVsExp  = gapTotalWithPrin - target;
+  const fullVsExp = fullTotal - target;
+
+  // 실제 시뮬레이션으로 p.life세 잔여자산 확인 (사적연금 한도 제약으로 농협 등이 완전 소진되지 않을 수 있음)
+  const p2 = getP(); // sv()로 갱신된 슬라이더 값 반영
+  const simRes = simulate(p2, SA[sc]);
+  const lastRow = simRes.rows[simRes.rows.length-1];
+  const leftoverAsset = lastRow ? Math.round((lastRow.privB + lastRow.tirpB + lastRow.isaB)*10)/10 : 0; // 억원
 
   // 건보료 피부양자 경고
   // 합산 대상: 국민연금(공적연금)만
@@ -1426,10 +1430,11 @@ function autoSuggest(){
 
   const box = document.getElementById('suggest-box');
   box.className = 'suggest-result show';
-  box.innerHTML = `<strong>✅ 세금·건보료 최소화 + 생활비 목표 충족 플랜</strong>
-<div style="margin:5px 0 3px;font-size:9px;font-weight:700;">▸ 공백기 (${p.ret}~${p.npage}세) — 목표 ${target}만원/월</div>
+  box.innerHTML = `<strong>🎯 세금·건보료 최소화 + ${p.life}세(기대수명) 맞춤 자동설계</strong>
+<div style="font-size:8px;color:#888;margin:2px 0 4px;">※ 아래 금액은 모두 "오늘(${p.age}세) 기준 실질 가치"이며, 실제로는 매년 물가상승률(${infR}%)만큼 명목 인출액이 증가합니다. 생활비 목표선과 동일 기준으로 비교 가능합니다.</div>
+<div style="margin:5px 0 3px;font-size:9px;font-weight:700;">▸ 공백기 (${p.ret}~${p.npage-1}세) — 인출 우선순위 ① ISA ② 안세공 ③ 미래에셋 ④ 농협</div>
 <ul>
-  <li>🥇 ISA <b>${p.ret}세~ 월 ${isaFinal}만</b> → 비과세·건보료 없음 (최우선)
+  <li>① ISA <b>${p.ret}세~ 월 ${isaFinal}만</b>(오늘 기준) → 비과세·건보료 없음, ${p.npage-1}세까지 물가증액 소진
     <div style="font-size:8px;color:#888;margin-top:1px;">
       3년 만기 ${isaC.cycles}회 반복 · 총 비과세 수익 ${isaExempt}만원
       ${isaTaxableGain > 0
@@ -1437,33 +1442,36 @@ function autoSuggest(){
         : '· 전액 비과세'}
     </div>
   </li>
-  <li>🥈 미래에셋 <b>${p.ret}세~ 월 ${mfMon}만</b> → 잔액 작은 것 먼저 소진</li>
-  <li>🥉 농협 <b>${p.ret}세~ 월 ${nhMon}만</b> → 큰 잔액 장기 분산</li>
-  <li>공백기 월 합계 <b>${gapTotal}만원</b> ${gapOk ? '✅ 목표 달성!' : '⚠️ '+gapShort+'만 부족 (자산 한계)'}</li>
-  ${prinMon > 0 ? `<li>💎 안세공(비공제) 비과세 인출 <b>월 ${prinMon}만</b> (농협 ${nhPrinMon}+미래에셋 ${mfPrinMon}) → 1,500만원 한도 미포함, 세금 없음
-    <div style="font-size:8px;color:#888;margin-top:1px;">합산 시 공백기 월 합계 <b>${gapTotalWithPrin}만원</b></div>
-  </li>` : ''}
+  ${prinMon > 0 ? `<li>② 안세공(비공제) 비과세 인출 <b>월 ${prinMon}만</b> (농협 ${nhPrinMon}+미래에셋 ${mfPrinMon}) → 1,500만원 한도(명목) 미포함, 세금 없음, ${p.npage-1}세까지 균등 소진(정액)</li>` : ''}
+  <li>③ 미래에셋 <b>${p.ret}세~ 월 ${mfMon}만</b>(오늘 기준) → ${p.npage-1}세까지 물가증액 소진</li>
+  <li>④ 농협 <b>${p.ret}세~ 월 ${nhMon}만</b>(오늘 기준) → ${p.life}세까지 물가증액 분산</li>
+  <li>공백기 첫해 월 합계 <b>${gapTotalWithPrin}만원</b>${prinMon>0?' <span style="opacity:.7;font-size:8px;">(연금자산 ${gapTotal}만 + 안세공 ${prinMon}만)</span>':''}
+    <div style="font-size:8px;color:#888;margin-top:1px;">생활비 ${target}만 대비 ${gapVsExp>=0?'+'+gapVsExp+'만 여유':gapVsExp+'만 부족'} (오늘 기준, 참고)</div>
+  </li>
   <li>공백기 사적연금 연 <b>${(privGap*12).toLocaleString()}만</b> ${privGap*12 <= p.plimit ? '→ 5.5% 분리과세 ✓' : '⚠️ 한도 초과 → 16.5% 분리과세 또는 종합과세'}</li>
 </ul>
-<div style="margin:5px 0 3px;font-size:9px;font-weight:700;">▸ 완성기 (${p.npage}세~)</div>
+<div style="margin:5px 0 3px;font-size:9px;font-weight:700;">▸ 완성기 (${p.npage}~${p.life}세)</div>
 <ul>
-  <li>국민연금 <b>${p.npage}세 정상 수령</b> → 조기수령 시 영구 감액</li>
-  <li>농협 <b>계속 월 ${nhMon}만 → ${irpStartAge}세부터 월 ${nhMonFull}만</b> (미래에셋 소진 후 한도 여유 활용)</li>
-  <li>퇴직IRP <b>65세~ 월 ${tirpMonSug}만</b> → 한도 무관·퇴직소득세 분류과세</li>
-  <li>IRP개인납입 <b>${irpStartAge}세~ 월 ${irpMon}만</b> → 미래에셋 소진 후 개시${irpMon === 0 ? ' (잔액 없거나 한도 소진)' : ''}</li>
-  <li>완성기 월 합계 <b>약 ${fullTotal}만원</b> ${fullTotal >= target ? '✅ 목표 초과' : ''}</li>
+  <li>국민연금 <b>${p.npage}세 정상 수령</b> → 조기수령 시 영구 감액 (국민연금은 별도로 매년 자동 물가 연동)</li>
+  <li>퇴직IRP <b>65세~ 월 ${tirpMonSug}만</b>(오늘 기준) → ${p.life}세 정확히 소진(물가증액 반영) · 한도 무관·퇴직소득세 분류과세</li>
+  <li>IRP개인납입 <b>${irpStartAge}세~ 월 ${irpMon}만</b>(오늘 기준) → 미래에셋 소진 후 개시, ${p.life}세까지 물가증액 분산${irpMon === 0 ? ' (잔액 없거나 한도 소진)' : ''}</li>
+  <li>농협 <b>${p.ret}세~ 월 ${nhMon}만</b>(오늘 기준, 공백기와 동일율 계속) → ${p.life}세까지 물가증액 분산</li>
+  <li>완성기 첫해 월 합계 <b>약 ${fullTotal}만원</b>
+    <div style="font-size:8px;color:#888;margin-top:1px;">생활비 ${target}만 대비 ${fullVsExp>=0?'+'+fullVsExp+'만 여유':fullVsExp+'만 부족'} (오늘 기준, 참고)</div>
+  </li>
   <li>완성기 사적연금 연 <b>${(privFull*12).toLocaleString()}만</b> ${privFull*12 <= p.plimit ? '→ 5.5% 분리과세 ✓' : '⚠️ 한도 초과 → 16.5% 분리과세 또는 종합과세'}</li>
 </ul>
-${gapShort > 0 ? '<div style="background:#FFF3E0;border-radius:5px;padding:5px 8px;margin-top:4px;font-size:9px;color:#E65100;">⚠️ 공백기 월 <b>'+gapShort+'만원</b> 부족 — ISA 납입 증액 또는 생활비 목표 조정을 검토하세요</div>' : ''}
 ${healthWarn ? `<div style="background:#FEF3C7;border-radius:5px;padding:5px 8px;margin-top:4px;font-size:9px;color:#92400E;">⚠️ 국민연금 연 <b>${Math.round(annualPension).toLocaleString()}만원</b> → 2,000만 초과 시 건보료 피부양자 탈락<br><span style="opacity:.8;">※ 퇴직IRP·연금저축·IRP개인납입·ISA는 사적연금으로 합산 제외</span></div>` : ''}
+${nhLimited ? `<div style="background:#FFF3E0;border-radius:5px;padding:5px 8px;margin-top:4px;font-size:9px;color:#E65100;">⚠️ 농협 연금저축은 PMT 이론상 월 ${nhMaxMon}만(오늘 기준)까지 받을 수 있지만, 사적연금 한도(연 ${p.plimit.toLocaleString()}만) 중 미래에셋이 대부분을 사용하여 월 ${nhMon}만만 인출 가능합니다. 그 결과 ${p.life}세 시점 잔여자산이 약 <b>${leftoverAsset}억원</b> 남을 것으로 예상됩니다. (한도 초과 인출 시 16.5%/종합과세 적용 가능)</div>` : ''}
 <div style="margin-top:5px;padding-top:4px;border-top:1px dashed #C8EFE0;font-size:9px;color:#5F5E5A;">
-  💡 사적연금(퇴직IRP·연금저축·IRP개인납입·ISA)은 건보료 피부양자 소득 합산 제외 → 국민연금만 2,000만원 기준 적용
+  💡 사적연금(퇴직IRP·연금저축·IRP개인납입·ISA)은 건보료 피부양자 소득 합산 제외 → 국민연금만 2,000만원 기준 적용<br>
+  🎯 퇴직IRP·미래에셋·IRP개인납입·ISA는 ${p.life}세(기대수명) 시점 0원에 맞춰 매년 물가상승률만큼 인출액을 증액합니다.${nhLimited ? ' 농협은 한도 제약으로 일부 잔여자산이 남습니다.' : ' 농협도 동일 기준으로 소진됩니다.'}
 </div>`;
   // 배너 업데이트
   showPlanBanner({
     gapTotal, fullTotal, annualPriv, limitOk,
-    isaFinal, mfMon, nhMon, nhMonFull, irpMon, tirpMonSug, irpStartAge,
-    gapShort, gapOk, target:p.exp,
+    isaFinal, mfMon, nhMon, irpMon, tirpMonSug, irpStartAge,
+    target:p.exp,
     npage:p.npage, ret:p.ret, tage:65,
     prinMon, nhPrinMon, mfPrinMon, gapTotalWithPrin
   });
@@ -1530,7 +1538,7 @@ function showPlanBanner(d){
   const fullItems = [
     {dot:'#EF9F27', label:'국민연금', val:p.np+'만', note:d.npage+'세 정상수령'},
     {dot:'#7F77DD', label:'퇴직IRP', val:d.tirpMonSug+'만', note:'한도무관·퇴직소득세 분류과세'},
-    {dot:'#1D9E75', label:'농협연금저축', val:(d.nhMonFull||d.nhMon)+'만', note:'미래에셋 소진 후 증액'},
+    {dot:'#1D9E75', label:'농협연금저축', val:d.nhMon+'만', note:'전 구간 동일율·물가증액'},
     {dot:'#378ADD', label:'IRP개인납입', val:d.irpMon+'만', note:d.irpStartAge+'세~ 미래에셋소진후'},
   ];
   document.getElementById('pb-full-rows').innerHTML = fullItems.map(it=>
@@ -1541,31 +1549,28 @@ function showPlanBanner(d){
     </div>`
   ).join('');
 
-  // 잔여자산: 시뮬레이션 마지막 행(90세)의 실제 잔액
-  const lastRow = res.rows[res.rows.length - 1];
-  const asset90 = lastRow
-    ? Math.round((lastRow.privB + lastRow.tirpB + lastRow.isaB) * 10) / 10
-    : 0; // 억 단위
-  
-
   // 인사이트 메시지
   const insights = [];
-  if(d.gapOk)  insights.push('✅ 공백기 생활비 목표('+d.target+'만원) 달성 가능합니다.');
-  else         insights.push('⚠️ 공백기 월 '+Math.abs(d.gapShort)+'만원 부족 — ISA 납입 증액 또는 생활비 조정을 검토하세요.');
+  if(gapNet>=0) insights.push('✅ 공백기 월 '+d.gapTotalWithPrin+'만원 — 생활비('+d.target+'만원) 대비 +'+gapNet+'만원 여유.');
+  else          insights.push('⚠️ 공백기 월 '+d.gapTotalWithPrin+'만원 — 생활비('+d.target+'만원) 대비 '+Math.abs(gapNet)+'만원 부족. ISA/안세공 추가 적립을 검토하세요.');
+  if(fullNet>=0) insights.push('✅ 완성기 월 '+d.fullTotal+'만원 — 생활비('+d.target+'만원) 대비 +'+fullNet+'만원 여유.');
+  else           insights.push('⚠️ 완성기 월 '+d.fullTotal+'만원 — 생활비('+d.target+'만원) 대비 '+Math.abs(fullNet)+'만원 부족. 국민연금 연기수령(1년당 +7.2%)을 검토하세요.');
   if(d.limitOk) insights.push('✅ 사적연금 연 '+d.annualPriv.toLocaleString()+'만원 → 1,500만원 한도 이하, 5.5% 저율 분리과세 적용됩니다.');
-  if(!rwOk)    insights.push('⚠️ '+res.runway+'세에 자산 소진 예상 — 생활비 절감 또는 수익률 개선이 필요합니다.');
-  // 90세 실제 잔여자산 기준 안내
-  if(rwOk && asset90 >= 3){
-    insights.push('💰 '+p.life+'세 잔여자산 약 '+asset90+'억 — 퇴직IRP·농협 월 수령액을 높여 생활 수준을 높이거나, 자녀 증여·의료비 예비 자금으로 활용을 검토하세요.');
-  } else if(rwOk && asset90 > 0){
-    insights.push('✅ '+p.life+'세 잔여자산 약 '+asset90+'억 — 생활비 수준과 자산 소진이 적절히 균형을 이루고 있습니다.');
-  }
-  insights.push('💡 ISA 비과세 인출로 건보료 산정 소득을 낮춰 피부양자 유지(연 2,000만원 이하)를 우선 검토하세요.');
+  if(!rwOk)    insights.push('⚠️ '+res.runway+'세에 자산 소진 예상 — 인출액이 자동 축소되었습니다.');
+  else         insights.push('🎯 '+p.life+'세(기대수명) 시점 자산이 0에 근접하도록 인출액이 최대화되었습니다.');
+  insights.push('💡 ISA·안세공 비과세 인출로 건보료 산정 소득을 낮춰 피부양자 유지(국민연금 연 2,000만원 이하)를 우선 검토하세요.');
 
   document.getElementById('pb-insight').innerHTML = insights.join('<br>');
 }
 
-/* ── 시뮬레이션 핵심 (완전 수정) ── */
+/* ── 시뮬레이션 핵심 (완전 수정) ──
+   ※ 물가상승률 반영 (2026-06 개정):
+   - 인출 슬라이더(nhpay, mfpay, irppay, isam, tm)의 값은 "현재(p.age세) 기준 실질 금액"으로 해석
+   - 실제 인출 시에는 매년 물가상승률만큼 명목 금액을 증액하여 적용 (infMul = (1+inf)^(age-p.age))
+   - 생활비 목표선(curExp)도 동일하게 p.age 기준 → 매년 물가 적용이므로, 두 값의 비교가
+     "오늘 기준 실질 가치"로 항상 일치함
+   - 안세공(비공제) 비과세 인출은 한도 자체가 명목 고정액(1,500만원/연)이므로 물가 미반영
+*/
 function simulate(p, adj){
   const yrs   = Math.max(0, p.ret-p.age);
   const rNh   = p.rnh+adj.r,  rMf  = p.rmf+adj.r,  rIrp = p.rirp+adj.r;
@@ -1642,23 +1647,21 @@ function simulate(p, adj){
     // 생활비: 은퇴 시점 생활비에서 추가 물가 적용
     const curExp = Math.round(expAtRet * Math.pow(1+infR/100, el));
 
+    // 물가상승 반영 배수: 슬라이더 입력값(nhpay 등)은 "현재(p.age) 기준" 금액으로 간주하고,
+    // curExp와 동일한 기준(p.age)에서부터 매년 물가만큼 증액하여 비교 가능하게 함.
+    const infMul = Math.pow(1+infR/100, age - p.age);
+
     // 각 계좌 수령액 계산 (잔액 부족 시 남은 잔액 전체 수령)
-    const nhOn  = age>=p.nhage  && nhB>0;
     const mfOn  = age>=p.mfage  && mfB>0;
     const irpOn = age>=p.irpage && irpB>0;
 
-    let mfInc  = mfOn  ? Math.min(p.mfpay,  Math.ceil(mfB /12)) : 0;
-    let irpInc = irpOn ? Math.min(p.irppay, Math.ceil(irpB/12)) : 0;
+    let mfInc  = mfOn  ? Math.min(Math.round(p.mfpay*infMul),  Math.ceil(mfB /12)) : 0;
+    let irpInc = irpOn ? Math.min(Math.round(p.irppay*infMul), Math.ceil(irpB/12)) : 0;
 
-    // 농협: 미래에셋·IRP 소진 후 한도 여유분 자동 흡수
-    // 기본 설정값(nhpay)을 하한으로, 한도 잔여분을 상한으로
-    let nhInc = 0;
-    if(nhOn){
-      const nhBase    = Math.min(p.nhpay, Math.ceil(nhB/12));
-      const limitLeft = Math.max(0, privLimMon - mfInc - irpInc);
-      const nhMax     = Math.min(Math.ceil(nhB/12), limitLeft);
-      nhInc = Math.max(nhBase, nhMax); // 기본값보다 많이 받을 수 있으면 증액
-    }
+    // 농협: 물가증액 PMT(57~기대수명) 기반 인출 — 한도 흡수 로직 제거
+    // (한도 여유분을 흡수하면 PMT 산정의 전제(life세 소진)가 깨지므로,
+    //  사적연금 한도 여유분은 IRP개인납입이 우선 활용하도록 함)
+    const nhInc = (age>=p.nhage && nhB>0) ? Math.min(Math.round(p.nhpay*infMul), Math.ceil(nhB/12)) : 0;
 
     // 사적연금 합산 한도 초과 시 비례 조정
     const pSum = nhInc+mfInc+irpInc;
@@ -1669,10 +1672,11 @@ function simulate(p, adj){
     const privInc = nhInc+mfInc+irpInc;
 
     const npInc   = age>=p.npage ? p.np : 0;
-    const tirpInc = age>=p.tage && tirpB>0 ? Math.min(p.tm, Math.ceil(tirpB/12)) : 0;
-    const isaInc  = age>=p.isaage && isaB>0 ? Math.min(p.isam, Math.ceil(isaB/12)) : 0;
+    const tirpInc = age>=p.tage && tirpB>0 ? Math.min(Math.round(p.tm*infMul), Math.ceil(tirpB/12)) : 0;
+    const isaInc  = age>=p.isaage && isaB>0 ? Math.min(Math.round(p.isam*infMul), Math.ceil(isaB/12)) : 0;
 
     // 안세공(비공제) 비과세 인출 — 공백기에만, 1,500만원 한도 미포함
+    // (비과세 한도 자체가 명목 금액이므로 물가상승 미반영, 정액 균등 소진 유지)
     let prinInc = 0;
     if(age < p.npage){
       const nhP = Math.min(nhPrinMonSim, Math.ceil(nhPrinB/12));
@@ -1723,100 +1727,6 @@ function simulate(p, adj){
   return { nhFV,mfFV,irpFV,tirpFV,isaFV, totalFV,
            gapMonthly, fullMonthly, privAnnual, runway, rows };
 }
-
-/* ── 90세 소진 맞춤: 계좌별 독립 PMT(상환식 연금) 공식으로 인출액 산출 ──
-   각 계좌의 수령 시작 나이 ~ p.life 까지 잔액이 정확히 0이 되는
-   월 인출액을 계좌별로 독립 계산 (계좌간 성장률·수령시작이 다르므로
-   단일 스케일 k 방식은 부정확함) */
-
-// 연금 상환식 PMT: pv를 연이율 ratePct(연 %)로, startAge~endAge(포함) 동안
-// 매월 동일액 인출 시 endAge 말에 잔액 0이 되는 월 인출액
-function pmtMonthly(pv, ratePct, startAge, endAge){
-  const n = (endAge - startAge + 1) * 12;
-  if(n<=0) return 0;
-  const rm = ratePct/100/12;
-  if(rm===0) return pv/n;
-  return pv * rm / (1 - Math.pow(1+rm, -n));
-}
-
-function fitTo90(){
-  const p = getP(), adj = SA[sc];
-  const rNh=p.rnh+adj.r, rMf=p.rmf+adj.r, rIrp=p.rirp+adj.r, rTirp=p.rtirp+adj.r, rIsa=p.risa+adj.r;
-
-  // 은퇴 시점(p.ret) FV 재계산 (simulate() 내부 로직과 동일)
-  const fvMonthly=(b0, monthlyPay, ratePct, start, end)=>{
-    const rm=ratePct/100/12, depGrow=1+rm*(10/30);
-    let b=b0;
-    for(let a=p.age;a<p.ret;a++){
-      const paying=a>=start && a<=end;
-      const mon=paying?monthlyPay:0;
-      for(let m=0;m<12;m++) b=b*(1+rm)+mon*depGrow;
-    }
-    return Math.max(0,b);
-  };
-  const nhFV  = fvMonthly(p.nh, p.nhm, rNh, p.nhstart, p.nhend);
-  const mfFV  = fvMonthly(p.mf, p.mfm, rMf, p.mfstart, p.mfend);
-  const irpFV = calcISA_FV(p.irp, p.irpy, p.age, Math.max(p.age,p.irpstart), Math.min(p.ret-1,p.irpend), p.ret, rIrp);
-  const tirpFV= calcFV(p.tirp, 0, p.ret-p.age, rTirp);
-  const isaFV = calcISA_FV(p.isa, p.isay, p.age, Math.max(p.age,p.isastart), Math.min(p.ret-1,p.isaend), p.ret, rIsa, 'isa');
-
-  // 각 계좌: 수령 시작 나이까지 추가 성장 반영 후 PMT
-  const growTo=(fv, ratePct, fromAge, toAge)=>fv*Math.pow(1+ratePct/100, Math.max(0,toAge-fromAge));
-
-  const nhFVstart  = growTo(nhFV,  rNh,  p.ret, p.nhage);
-  const mfFVstart  = growTo(mfFV,  rMf,  p.ret, p.mfage);
-  const irpFVstart = growTo(irpFV, rIrp, p.ret, p.irpage);
-  const tirpFVstart= growTo(tirpFV,rTirp,p.ret, p.tage);
-  const isaFVstart = growTo(isaFV, rIsa, p.ret, p.isaage);
-
-  let nhpay  = Math.round(pmtMonthly(nhFVstart,  rNh,  Math.max(p.ret,p.nhage),  p.life));
-  let mfpay  = Math.round(pmtMonthly(mfFVstart,  rMf,  Math.max(p.ret,p.mfage),  p.life));
-  let irppay = Math.round(pmtMonthly(irpFVstart, rIrp, Math.max(p.ret,p.irpage), p.life));
-  let isam   = Math.round(pmtMonthly(isaFVstart, rIsa, Math.max(p.ret,p.isaage), p.life));
-  let tm     = Math.round(pmtMonthly(tirpFVstart,rTirp,Math.max(p.ret,p.tage),   p.life));
-
-  // 사적연금(농협+미래에셋+IRP) 합산 한도 초과 시 비례 축소
-  const privLimMon = Math.round(p.plimit/12);
-  const pSum = nhpay+mfpay+irppay;
-  if(pSum>privLimMon && pSum>0){
-    const s=privLimMon/pSum;
-    nhpay=Math.round(nhpay*s); mfpay=Math.round(mfpay*s); irppay=Math.round(irppay*s);
-  }
-
-  const applied = {nhpay,mfpay,irppay,isam,tm};
-
-  // 입력 필드/슬라이더에 반영 (max 속성 한도 내)
-  Object.keys(applied).forEach(f=>{
-    const inp = document.getElementById(f);
-    const rng = document.getElementById(f+'-r');
-    if(!inp) return;
-    const maxAttr = parseFloat(inp.max);
-    const minAttr = parseFloat(inp.min);
-    let v = applied[f];
-    if(!isNaN(maxAttr)) v = Math.min(v, maxAttr);
-    if(!isNaN(minAttr)) v = Math.max(v, minAttr);
-    applied[f] = v;
-    inp.value = v;
-    if(rng) rng.value = v;
-  });
-
-  upd();
-  saveState();
-
-  const box = document.getElementById('fit90-box');
-  if(box){
-    box.className = 'suggest-result show';
-    box.innerHTML =
-      '🎯 각 계좌별 수령 시작 나이~'+p.life+'세까지 잔액이 정확히 0이 되도록 월 인출액을 재계산했습니다.<ul>'
-      + '<li>농협 월수령 → '+nhpay+'만 ('+p.nhage+'세~)</li>'
-      + '<li>미래에셋 월수령 → '+mfpay+'만 ('+p.mfage+'세~)</li>'
-      + '<li>IRP 월수령 → '+irppay+'만 ('+p.irpage+'세~)</li>'
-      + '<li>ISA 월수령 → '+isam+'만 ('+p.isaage+'세~)</li>'
-      + '<li>퇴직IRP 월수령 → '+tm+'만 ('+p.tage+'세~)</li>'
-      + '</ul><div style="margin-top:5px;opacity:.75;">※ 사적연금(농협+미래에셋+IRP) 합산이 연 '+p.plimit.toLocaleString()+'만 한도를 넘으면 비례 축소했습니다. 입력칸 최대값(max) 제한에 걸리면 슬라이더 범위를 늘려야 할 수 있습니다.</div>';
-  }
-}
-
 
 
 
