@@ -320,8 +320,10 @@ button{font-family:inherit;cursor:pointer;}
 /* 접힌 상태: ~410px */
 @media (max-width:410px){
   html,body{height:auto;overflow:visible;}
-  .main-layout{grid-template-columns:1fr;overflow:visible;}
-  .left-panel,.right-panel{overflow:visible;min-height:0;
+  body{display:block;}
+  .main-layout{display:block;flex:none;overflow:visible;}
+  .left-panel,.right-panel{display:block;overflow:visible;
+    min-height:0;height:auto;flex:none;width:100%;
     border-right:none;border-bottom:1px solid #E8EAF0;}
   .metrics-bar{grid-template-columns:repeat(2,1fr);}
   .pb-grid{grid-template-columns:repeat(2,1fr);}
